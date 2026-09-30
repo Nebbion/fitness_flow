@@ -1,0 +1,472 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Operation completed",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "close": "Close",
+    "view": "View",
+    "download": "Download",
+    "upload": "Upload",
+    "yes": "Yes",
+    "no": "No",
+    "actions": "Actions",
+    "status": "Status",
+    "date": "Date",
+    "time": "Time",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "notes": "Notes",
+    "active": "Active",
+    "inactive": "Inactive",
+    "required": "Required",
+    "optional": "Optional",
+    "all": "All",
+    "none": "None",
+    "noResults": "No results found",
+    "itemsPerPage": "Items per page",
+    "page": "Page",
+    "of": "of",
+    "total": "Total",
+    "createdAt": "Created at",
+    "updatedAt": "Updated at"
+  },
+
+  "nav": {
+    "dashboard": "Dashboard",
+    "clients": "Clients",
+    "appointments": "Appointments",
+    "services": "Services",
+    "documents": "Documents",
+    "staff": "Staff",
+    "billing": "Billing",
+    "ai": "AI Assistant",
+    "settings": "Settings",
+    "portal": "My Portal",
+    "profile": "Profile",
+    "logout": "Log out",
+    "admin": "Super Admin"
+  },
+
+  "auth": {
+    "login": {
+      "title": "Sign in to FitnessFlow",
+      "subtitle": "Enter your credentials to access your account",
+      "email": "Email address",
+      "password": "Password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "register": "Sign up for free",
+      "loading": "Signing in...",
+      "error": "Invalid credentials. Please try again.",
+      "magicLink": "Sign in with magic link",
+      "magicLinkSent": "We've sent you a sign-in link via email",
+      "resendConfirmation": "Resend confirmation link",
+      "confirmationSent": "We've sent you a new confirmation link.",
+      "confirmationSameBrowser": "Request a new confirmation link and open it in the same browser profile used to create the account."
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Start your 14-day free trial",
+      "fullName": "Full name",
+      "email": "Email address",
+      "password": "Password",
+      "passwordConfirm": "Confirm password",
+      "submit": "Create account",
+      "hasAccount": "Already have an account?",
+      "login": "Sign in",
+      "loading": "Creating account...",
+      "success": "Account created! Check your email to confirm.",
+      "terms": "By signing up you agree to our {terms} and {privacy}",
+      "termsLink": "Terms of Service",
+      "privacyLink": "Privacy Policy"
+    },
+    "onboarding": {
+      "title": "Set up your studio",
+      "step1": {
+        "title": "Business details",
+        "subtitle": "What is the name of your studio or business?",
+        "companyName": "Studio / business name",
+        "companyNamePlaceholder": "e.g. NutriFit Studio",
+        "slug": "Custom URL",
+        "slugHelp": "Your URL will be: {slug}.fitnessflow.app",
+        "logo": "Logo (optional)",
+        "logoHelp": "PNG or JPG, max 5MB"
+      },
+      "step2": {
+        "title": "Your profession",
+        "subtitle": "Select your specialization",
+        "professions": {
+          "nutritionist": "Nutritionist",
+          "personal_trainer": "Personal Trainer",
+          "physiotherapist": "Physiotherapist",
+          "osteopath": "Osteopath",
+          "massage_therapist": "Massage Therapist",
+          "other": "Other"
+        }
+      },
+      "step3": {
+        "title": "Customize colors",
+        "subtitle": "Choose your brand colors",
+        "primaryColor": "Primary color",
+        "accentColor": "Accent color"
+      },
+      "step4": {
+        "title": "Subscription",
+        "subtitle": "Choose the plan that fits you best",
+        "trialNote": "Start with 14 days free, no card required"
+      },
+      "complete": "Complete setup",
+      "skip": "Skip for now"
+    }
+  },
+
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back, {name}",
+    "stats": {
+      "totalClients": "Total clients",
+      "appointmentsToday": "Appointments today",
+      "appointmentsWeek": "This week",
+      "monthlyRevenue": "Monthly revenue",
+      "activeClients": "Active clients",
+      "newClientsMonth": "New clients this month"
+    },
+    "nextAppointments": "Upcoming appointments",
+    "recentClients": "Recent clients",
+    "noAppointmentsToday": "No appointments today",
+    "viewAll": "View all"
+  },
+
+  "clients": {
+    "title": "Clients",
+    "newClient": "New client",
+    "searchPlaceholder": "Search by name, email or phone...",
+    "filters": {
+      "search": "Search by name, email or phone...",
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "withAppointments": "With appointments",
+      "inactive30Days": "Inactive for 30 days"
+    },
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "lastAppointment": "Last appointment",
+      "tags": "Tags",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "common": {
+      "noResults": "No clients found"
+    },
+    "form": {
+      "title": "Client details",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "John Smith",
+      "email": "Email",
+      "emailPlaceholder": "john@email.com",
+      "phone": "Phone",
+      "phonePlaceholder": "+1 555 1234567",
+      "birthDate": "Date of birth",
+      "gender": "Gender",
+      "genderOptions": {
+        "male": "Male",
+        "female": "Female",
+        "other": "Other",
+        "not_specified": "Not specified"
+      },
+      "assignedStaff": "Assigned staff",
+      "notes": "Internal notes",
+      "notesPlaceholder": "Notes visible to staff only...",
+      "tags": "Tags",
+      "tagsPlaceholder": "Add tags...",
+      "language": "Preferred language",
+      "customFields": "Specific data"
+    },
+    "detail": {
+      "overview": "Overview",
+      "appointments": "Appointments",
+      "progress": "Progress",
+      "documents": "Documents",
+      "messages": "Messages",
+      "editClient": "Edit client",
+      "deleteClient": "Delete client",
+      "deleteConfirm": "Are you sure you want to delete {name}? This action cannot be undone.",
+      "noAppointments": "No appointments",
+      "noProgress": "No progress data",
+      "noDocuments": "No documents",
+      "portalAccess": "Portal access",
+      "sendPortalInvite": "Send portal invite",
+      "portalInviteSent": "Invite sent to {email}",
+      "lastAppointment": "Last appointment",
+      "totalAppointments": "Total appointments",
+      "nextAppointment": "Next appointment"
+    },
+    "deleteSuccess": "Client deleted successfully",
+    "createSuccess": "Client created successfully",
+    "updateSuccess": "Client updated successfully"
+  },
+
+  "appointments": {
+    "title": "Appointments",
+    "newAppointment": "New appointment",
+    "calendar": {
+      "today": "Today",
+      "month": "Month",
+      "week": "Week",
+      "day": "Day",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No show"
+    },
+    "form": {
+      "title": "Appointment details",
+      "client": "Client",
+      "clientPlaceholder": "Select client...",
+      "staff": "Staff",
+      "service": "Service",
+      "servicePlaceholder": "Select service...",
+      "date": "Date",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "notes": "Notes",
+      "notesPlaceholder": "Appointment notes...",
+      "status": "Status",
+      "googleCalendar": "Sync with Google Calendar"
+    },
+    "conflict": "Conflict: staff already has an appointment at this time",
+    "createSuccess": "Appointment created successfully",
+    "updateSuccess": "Appointment updated successfully",
+    "cancelConfirm": "Are you sure you want to cancel this appointment?",
+    "cancelSuccess": "Appointment cancelled",
+    "noAppointments": "No appointments in this period"
+  },
+
+  "services": {
+    "title": "Services",
+    "newService": "New service",
+    "form": {
+      "name": "Service name",
+      "namePlaceholder": "e.g. Initial Consultation",
+      "description": "Description",
+      "duration": "Duration (minutes)",
+      "price": "Price",
+      "currency": "Currency",
+      "color": "Calendar color",
+      "active": "Service active"
+    },
+    "noServices": "No services configured",
+    "createSuccess": "Service created successfully",
+    "updateSuccess": "Service updated successfully",
+    "deleteSuccess": "Service deleted"
+  },
+
+  "documents": {
+    "title": "Documents",
+    "upload": "Upload document",
+    "types": {
+      "nutrition_plan": "Nutrition Plan",
+      "workout_plan": "Workout Plan",
+      "report": "Report",
+      "medical": "Medical Document",
+      "image": "Image",
+      "other": "Other"
+    },
+    "form": {
+      "name": "Document name",
+      "type": "Type",
+      "visibleToClient": "Visible to client",
+      "file": "Select file"
+    },
+    "noDocuments": "No documents uploaded",
+    "uploadSuccess": "Document uploaded successfully",
+    "deleteConfirm": "Are you sure you want to delete {name}?",
+    "deleteSuccess": "Document deleted"
+  },
+
+  "progress": {
+    "title": "Progress",
+    "newEntry": "New measurement",
+    "chart": {
+      "weight": "Weight (kg)",
+      "bodyFat": "Body Fat (%)",
+      "muscleMass": "Muscle Mass (kg)",
+      "noData": "No data available"
+    },
+    "form": {
+      "date": "Measurement date",
+      "weight": "Weight (kg)",
+      "height": "Height (cm)",
+      "bodyFat": "Body Fat (%)",
+      "muscleMass": "Muscle Mass (kg)",
+      "notes": "Notes"
+    },
+    "createSuccess": "Measurement saved successfully"
+  },
+
+  "ai": {
+    "title": "AI Assistant",
+    "features": {
+      "nutritionPlan": "Generate Nutrition Plan",
+      "workoutPlan": "Generate Workout Plan",
+      "summarizeClient": "Summarize client history",
+      "draftWhatsapp": "Draft WhatsApp message",
+      "draftEmail": "Draft email"
+    },
+    "generating": "Generating...",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "regenerate": "Regenerate",
+    "useResult": "Use this text",
+    "selectClient": "Select a client to continue",
+    "tokensUsed": "Tokens used: {tokens}",
+    "limitReached": "You've reached the AI limit for your plan. Upgrade to continue."
+  },
+
+  "billing": {
+    "title": "Billing",
+    "currentPlan": "Current plan",
+    "plans": {
+      "trial": "Free Trial",
+      "starter": "Starter",
+      "professional": "Professional",
+      "business": "Business"
+    },
+    "features": {
+      "clients": "up to {count} clients",
+      "clientsUnlimited": "Unlimited clients",
+      "appointments": "Unlimited appointments",
+      "whatsapp": "WhatsApp messages",
+      "ai": "AI Assistant",
+      "storage": "{size} document storage"
+    },
+    "upgrade": "Upgrade plan",
+    "manageSubscription": "Manage subscription",
+    "cancelSubscription": "Cancel subscription",
+    "trialEnds": "Free trial ends on {date}",
+    "nextBilling": "Next billing date: {date}",
+    "invoices": "Invoices",
+    "noInvoices": "No invoices available"
+  },
+
+  "portal": {
+    "title": "My Space",
+    "welcome": "Hello, {name}",
+    "nextAppointment": "Next appointment",
+    "noNextAppointment": "No upcoming appointments",
+    "appointments": {
+      "title": "My appointments",
+      "upcoming": "Upcoming",
+      "past": "Past"
+    },
+    "plans": {
+      "title": "My plans",
+      "noPlans": "No plans available"
+    },
+    "documents": {
+      "title": "My documents",
+      "noDocuments": "No documents available"
+    },
+    "progress": {
+      "title": "My progress"
+    }
+  },
+
+  "staff": {
+    "title": "Staff",
+    "invite": "Invite staff member",
+    "roles": {
+      "TENANT_ADMIN": "Administrator",
+      "STAFF": "Staff"
+    },
+    "form": {
+      "email": "Email",
+      "fullName": "Full name",
+      "role": "Role"
+    },
+    "inviteSent": "Invite sent to {email}",
+    "removeConfirm": "Are you sure you want to remove {name} from staff?",
+    "removeSuccess": "Staff member removed"
+  },
+
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "company": "Company",
+      "notifications": "Notifications",
+      "customFields": "Custom fields",
+      "integrations": "Integrations",
+      "account": "Account"
+    },
+    "company": {
+      "title": "Business details",
+      "name": "Studio name",
+      "slug": "URL",
+      "logo": "Logo",
+      "colors": "Brand colors",
+      "timezone": "Timezone",
+      "locale": "Default language"
+    },
+    "notifications": {
+      "title": "Notification rules",
+      "channel": "Channel",
+      "trigger": "Event",
+      "delay": "Delay",
+      "active": "Active"
+    },
+    "customFields": {
+      "title": "Custom client fields",
+      "addField": "Add field",
+      "label": "Label",
+      "type": "Type",
+      "required": "Required"
+    }
+  },
+
+  "errors": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email address",
+    "invalidPhone": "Invalid phone number",
+    "minLength": "Minimum {min} characters",
+    "maxLength": "Maximum {max} characters",
+    "passwordMismatch": "Passwords do not match",
+    "slugTaken": "This URL is already taken",
+    "clientLimitReached": "You've reached the client limit for your plan. Upgrade to add more.",
+    "unauthorized": "You are not authorized to perform this operation",
+    "notFound": "Item not found",
+    "serverError": "Server error. Please try again later.",
+    "networkError": "Network error. Check your connection."
+  },
+
+  "notifications": {
+    "templates": {
+      "appt_confirmation": "Hi {client_name}! ✅ Your appointment with {staff_name} is confirmed for {date} at {time}. See you soon!",
+      "appt_reminder_24h": "Hi {client_name}! 🔔 Just a reminder that tomorrow at {time} you have an appointment with {staff_name}. Need to reschedule? Reply to this message.",
+      "appt_reminder_2h": "Hi {client_name}! ⏰ Your appointment with {staff_name} is in 2 hours. See you soon!",
+      "appt_followup": "Hi {client_name}! 😊 How are you doing after your appointment {days_ago}? We're here if you have any questions.",
+      "client_reengagement": "Hi {client_name}! It's been 30 days since your last appointment. Would you like to book a new one? We're here for you! 💪"
+    }
+  }
+}

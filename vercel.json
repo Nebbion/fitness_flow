@@ -1,0 +1,26 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
+  "regions": ["fra1"],
+  "functions": {
+    "src/app/api/ai/generate/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/webhooks/stripe/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/webhooks/whatsapp/route.ts": {
+      "maxDuration": 15
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/webhooks/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    }
+  ]
+}
