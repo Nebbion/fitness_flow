@@ -22,7 +22,7 @@ export default async function SettingsPage({ params }: PageProps) {
   if (!user) redirect(`/${locale}/auth/login`)
 
   const { data: profile } = await supabase
-    .from('profiles').select('tenant_id, role').eq('id', user.id).single()
+    .from('profiles').select('tenant_id, role, full_name').eq('id', user.id).single()
 
   if (!profile?.tenant_id || profile.role !== 'TENANT_ADMIN') redirect(`/${locale}/dashboard`)
 
@@ -46,6 +46,10 @@ export default async function SettingsPage({ params }: PageProps) {
       <SettingsTabs
         locale={locale}
         tenant={tenant}
+        adminAccount={{
+          email: user.email ?? '',
+          fullName: profile.full_name ?? user.user_metadata?.full_name ?? null,
+        }}
         customFields={customFields ?? []}
         notifRules={notifRules ?? []}
       />

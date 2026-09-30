@@ -10,34 +10,69 @@ export interface WhatsAppTemplateMessage {
   components?: any[]
 }
 
+export interface WhatsAppConnectionCredentials {
+  phoneNumberId: string
+  accessToken: string
+}
+
 const BASE_URL = process.env.WHATSAPP_API_URL ?? 'https://graph.facebook.com/v21.0'
-const PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID
-const TOKEN    = process.env.WHATSAPP_ACCESS_TOKEN
+
+function normalizePhoneNumber(phone: string) {
+  return phone.replace(/[^\d]/g, '').replace(/^00/, '')
+}
+
+async function sendMessage(
+  credentials: WhatsAppConnectionCredentials,
+  payload: Record<string, unknown>
+) {
+  const res = await fetch(`${BASE_URL}/${credentials.phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${credentials.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ messaging_product: 'whatsapp', ...payload }),
+  })
+
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error?.message ?? 'WhatsApp API error')
+
+  return data.messages?.[0]?.id as string | undefined
+}
 
 // Invia un messaggio di testo libero
 export async function sendWhatsAppText(
-  msg: WhatsAppTextMessage
+  msg: WhatsAppTextMessage,
+  credentials: WhatsAppConnectionCredentials
 ): Promise<{ messageId?: string; error?: string }> {
   try {
-    const res = await fetch(`${BASE_URL}/${PHONE_ID}/messages`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: msg.to.replace(/\s/g, ''),
-        type: 'text',
-        text: { body: msg.body, preview_url: false },
-      }),
+    const messageId = await sendMessage(credentials, {
+      recipient_type: 'individual',
+      to: normalizePhoneNumber(msg.to),
+      type: 'text',
+      text: { body: msg.body, preview_url: false },
     })
+    return { messageId }
+  } catch (err: any) {
+    return { error: err.message }
+  }
+}
 
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error?.message ?? 'WhatsApp API error')
-
-    return { messageId: data.messages?.[0]?.id }
+export async function sendWhatsAppTemplate(
+  msg: WhatsAppTemplateMessage,
+  credentials: WhatsAppConnectionCredentials
+): Promise<{ messageId?: string; error?: string }> {
+  try {
+    const messageId = await sendMessage(credentials, {
+      to: normalizePhoneNumber(msg.to),
+      type: 'template',
+      template: {
+        name: msg.templateName,
+        language: { code: msg.language },
+        ...(msg.components ? { components: msg.components } : {}),
+      },
+    })
+    return { messageId }
   } catch (err: any) {
     return { error: err.message }
   }

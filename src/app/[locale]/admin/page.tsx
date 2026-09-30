@@ -12,10 +12,25 @@ interface PageProps {
 
 export const metadata: Metadata = { title: 'Super Admin — FitnessFlow' }
 
+type AdminTenantSummary = {
+  id: string
+  name: string
+  slug: string
+  plan: string
+  status: string
+  profession: string
+  created_at: string
+}
+
+type AiUsageSummary = {
+  total_tokens: number | null
+  cost_usd: number | null
+}
+
 export default async function AdminPage({ params }: PageProps) {
   const { locale } = await params
-  const supabase = await createClient()
-  const admin = createAdminClient()
+  const supabase = await createClient() as any
+  const admin = createAdminClient() as any
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/auth/login`)
@@ -47,8 +62,10 @@ export default async function AdminPage({ params }: PageProps) {
       .gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString()),
   ])
 
-  const totalAiTokens = aiUsage?.reduce((s, r) => s + (r.total_tokens ?? 0), 0) ?? 0
-  const totalAiCost = aiUsage?.reduce((s, r) => s + (r.cost_usd ?? 0), 0) ?? 0
+  const aiUsageRows = (aiUsage ?? []) as AiUsageSummary[]
+  const recentTenantRows = (recentTenants ?? []) as AdminTenantSummary[]
+  const totalAiTokens = aiUsageRows.reduce((s, r) => s + (r.total_tokens ?? 0), 0)
+  const totalAiCost = aiUsageRows.reduce((s, r) => s + Number(r.cost_usd ?? 0), 0)
 
   const PLAN_BADGE: Record<string, any> = {
     trial: 'secondary',
@@ -110,7 +127,7 @@ export default async function AdminPage({ params }: PageProps) {
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y divide-border">
-            {recentTenants?.map(tenant => (
+            {recentTenantRows.map(tenant => (
               <div key={tenant.id} className="flex items-center justify-between px-6 py-3">
                 <div>
                   <p className="text-sm font-medium">{tenant.name}</p>

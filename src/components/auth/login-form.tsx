@@ -33,6 +33,33 @@ export function LoginForm({ locale, redirectTo, initialError }: LoginFormProps) 
     return tErrors(message.replace(/^errors\./, '') as any, values)
   }
 
+  function getAuthErrorMessage(error: unknown) {
+    const message = error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error && 'message' in error && typeof error.message === 'string'
+        ? error.message
+        : ''
+
+    if (message.toLowerCase().includes('user not found')) {
+      return 'Nessun invito trovato per questa email. Chiedi al professionista di invitarti al portale.'
+    }
+
+    if (
+      message.toLowerCase().includes('rate limit') ||
+      message.toLowerCase().includes('security purposes')
+    ) {
+      return 'Hai richiesto troppi link in poco tempo. Attendi qualche minuto e riprova.'
+    }
+
+    if (message) return message
+    return tErrors('serverError')
+  }
+
+  function getEmailRedirectUrl() {
+    const nextPath = redirectTo ?? `/${locale}`
+    return `${window.location.origin}/${locale}/auth/callback?next=${encodeURIComponent(nextPath)}`
+  }
+
   const {
     register,
     handleSubmit,
@@ -78,14 +105,17 @@ export function LoginForm({ locale, redirectTo, initialError }: LoginFormProps) 
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/${locale}/auth/callback`,
+          emailRedirectTo: getEmailRedirectUrl(),
+          shouldCreateUser: false,
         },
       })
 
       if (error) throw error
       toast.success(t('magicLinkSent'))
-    } catch {
-      toast.error(tErrors('serverError'))
+    } catch (error) {
+      const message = getAuthErrorMessage(error)
+      setError('root', { message })
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }
@@ -104,14 +134,16 @@ export function LoginForm({ locale, redirectTo, initialError }: LoginFormProps) 
         type: 'signup',
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/${locale}/auth/callback`,
+          emailRedirectTo: getEmailRedirectUrl(),
         },
       })
 
       if (error) throw error
       toast.success(t('confirmationSent'))
-    } catch {
-      toast.error(tErrors('serverError'))
+    } catch (error) {
+      const message = getAuthErrorMessage(error)
+      setError('root', { message })
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }

@@ -4,26 +4,32 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, Plus, Trash2, Building2, Bell, Sliders } from 'lucide-react'
+import { Loader2, Plus, Trash2, Building2, Bell, Sliders, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/index'
 import { cn } from '@/lib/utils'
 import type { CustomFieldDefinition } from '@/types'
+import { WhatsAppConnectionPanel } from './whatsapp-connection-panel'
 
 interface SettingsTabsProps {
   locale: string
   tenant: any
+  adminAccount: {
+    email: string
+    fullName: string | null
+  }
   customFields: CustomFieldDefinition[]
   notifRules: any[]
 }
 
 const TABS = [
   { key: 'company',      label: 'Azienda',     icon: Building2 },
+  { key: 'whatsapp',     label: 'WhatsApp',    icon: MessageCircle },
   { key: 'notifications',label: 'Notifiche',   icon: Bell },
   { key: 'customFields', label: 'Campi custom',icon: Sliders },
 ]
 
-export function SettingsTabs({ locale, tenant, customFields, notifRules }: SettingsTabsProps) {
+export function SettingsTabs({ locale, tenant, adminAccount, customFields, notifRules }: SettingsTabsProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('company')
   const [saving, setSaving] = useState(false)
@@ -179,6 +185,26 @@ export function SettingsTabs({ locale, tenant, customFields, notifRules }: Setti
                 </select>
               </div>
             </div>
+            <div className="border-t border-border pt-5 space-y-4">
+              <div>
+                <h3 className="text-sm font-medium">Account amministratore</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Dati usati per accedere a FitnessFlow.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {adminAccount.fullName && (
+                  <div className="space-y-2">
+                    <Label>Nome account</Label>
+                    <Input value={adminAccount.fullName} readOnly />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label>Email di accesso</Label>
+                  <Input value={adminAccount.email} readOnly type="email" />
+                </div>
+              </div>
+            </div>
             <div className="flex justify-end pt-2">
               <Button onClick={saveCompany} disabled={saving}>
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -188,6 +214,9 @@ export function SettingsTabs({ locale, tenant, customFields, notifRules }: Setti
           </CardContent>
         </Card>
       )}
+
+      {/* Notifications */}
+      {activeTab === 'whatsapp' && <WhatsAppConnectionPanel />}
 
       {/* Notifications */}
       {activeTab === 'notifications' && (

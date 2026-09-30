@@ -85,6 +85,7 @@ Apri [http://localhost:3000](http://localhost:3000)
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chiave pubblica (anon key) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Chiave service role (solo server) |
 | `DATABASE_POOL_URL` | Stringa connessione PgBouncer porta 6543 |
+| `SUPER_ADMIN_BOOTSTRAP_TOKEN` | Token temporaneo per promuovere il primo super admin |
 
 ### Stripe
 | Variabile | Descrizione |
@@ -114,6 +115,24 @@ Apri [http://localhost:3000](http://localhost:3000)
 | `WHATSAPP_PHONE_NUMBER_ID` | ID numero WhatsApp Business |
 | `WHATSAPP_ACCESS_TOKEN` | Token di accesso permanente |
 | `WHATSAPP_VERIFY_TOKEN` | Token per verifica webhook |
+
+## Bootstrap Super Admin
+
+Il ruolo `SUPER_ADMIN` gestisce i professionisti/tenant dalla sezione `/admin`.
+Per creare il primo super admin:
+
+1. Registrati normalmente con l'email che dovra diventare super admin.
+2. Imposta `SUPER_ADMIN_BOOTSTRAP_TOKEN` nelle variabili d'ambiente.
+3. Chiama una sola volta:
+
+```bash
+curl -X POST "$NEXT_PUBLIC_APP_URL/api/admin/bootstrap" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","token":"VALORE_SUPER_ADMIN_BOOTSTRAP_TOKEN"}'
+```
+
+L'endpoint funziona solo se non esiste gia nessun profilo `SUPER_ADMIN`.
+Dopo il bootstrap, rimuovi o ruota `SUPER_ADMIN_BOOTSTRAP_TOKEN`.
 
 ---
 

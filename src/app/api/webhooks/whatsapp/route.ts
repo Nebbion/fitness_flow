@@ -41,18 +41,33 @@ export async function POST(request: NextRequest) {
     const msg = parseInboundMessage(body)
     if (!msg) return NextResponse.json({ ok: true })
 
+    // Meta include il numero destinatario nel metadata: e il modo affidabile
+    // per risalire al tenant quando piu studi usano FitnessFlow.
+    const phoneNumberId = body.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id
+    if (!phoneNumberId) return NextResponse.json({ ok: true })
+
+    const { data: connection } = await admin
+      .from('whatsapp_connections')
+      .select('tenant_id')
+      .eq('phone_number_id', phoneNumberId)
+      .eq('status', 'active')
+      .maybeSingle()
+
+    if (!connection) return NextResponse.json({ ok: true })
+
     // Trova il cliente dal numero di telefono
     const phoneClean = msg.from.replace(/^\+/, '')
     const { data: client } = await admin
       .from('clients')
       .select('id, tenant_id, full_name')
+      .eq('tenant_id', connection.tenant_id)
       .or(`phone.eq.+${phoneClean},phone.eq.${phoneClean}`)
       .limit(1)
       .single()
 
     // Salva il messaggio in arrivo
     await admin.from('whatsapp_messages').insert({
-      tenant_id: client?.tenant_id ?? null,
+      tenant_id: connection.tenant_id,
       client_id: client?.id ?? null,
       direction: 'inbound',
       body: msg.text,

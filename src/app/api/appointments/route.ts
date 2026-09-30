@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAppointmentSchema } from '@/schemas'
+import { sendAppointmentConfirmation } from '@/lib/whatsapp/notifications'
 
 // GET /api/appointments
 export async function GET(request: NextRequest) {
@@ -102,6 +103,13 @@ export async function POST(request: NextRequest) {
       appointment_id: data.id,
       tenant_id: profile.tenant_id,
     }).catch(() => {})
+
+    // Una notifica fallita non deve impedire il salvataggio dell'appuntamento.
+    try {
+      await sendAppointmentConfirmation(data.id)
+    } catch (error) {
+      console.error('WhatsApp appointment confirmation error:', error)
+    }
 
     return NextResponse.json({ data, id: data.id }, { status: 201 })
   } catch (err: any) {

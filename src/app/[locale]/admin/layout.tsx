@@ -10,7 +10,7 @@ interface AdminLayoutProps {
 
 export default async function AdminLayout({ children, params }: AdminLayoutProps) {
   const { locale } = await params
-  const supabase = await createClient()
+  const supabase = await createClient() as any
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/auth/login`)
@@ -21,9 +21,9 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
   if (profile?.role !== 'SUPER_ADMIN') redirect(`/${locale}/dashboard`)
 
   const navItems = [
-    { href: `/${locale}/admin`,         label: 'Dashboard', icon: LayoutDashboard },
-    { href: `/${locale}/admin/tenants`, label: 'Tenant',    icon: Users },
-    { href: `/${locale}/admin/billing`, label: 'Billing',   icon: CreditCard },
+    { href: `/${locale}/admin`,         label: 'Dashboard',      icon: LayoutDashboard },
+    { href: `/${locale}/admin/tenants`, label: 'Professionisti', icon: Users },
+    { href: `/${locale}/admin/billing`, label: 'Billing',        icon: CreditCard },
   ]
 
   return (

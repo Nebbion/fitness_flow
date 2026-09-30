@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslations } from 'next-intl'
@@ -121,6 +121,18 @@ export function OnboardingWizard({ locale, userId, userEmail }: OnboardingWizard
     }
   }
 
+  function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
+    const submitter = (event.nativeEvent as SubmitEvent).submitter
+
+    // The wizard must only create a tenant when the explicit final action is used.
+    if (submitter?.getAttribute('data-onboarding-submit') !== 'true') {
+      event.preventDefault()
+      return
+    }
+
+    void handleSubmit(onSubmit)(event)
+  }
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-black/20 border border-slate-200 dark:border-slate-800 overflow-hidden">
       {/* Step indicator */}
@@ -151,7 +163,7 @@ export function OnboardingWizard({ locale, userId, userEmail }: OnboardingWizard
         })}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="p-8">
+      <form onSubmit={handleFormSubmit} className="p-8">
 
         {/* STEP 1 — Dati aziendali */}
         {currentStep === 1 && (
@@ -306,7 +318,7 @@ export function OnboardingWizard({ locale, userId, userEmail }: OnboardingWizard
               Avanti →
             </Button>
           ) : (
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" data-onboarding-submit="true" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

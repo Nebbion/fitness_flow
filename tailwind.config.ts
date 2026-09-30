@@ -15,9 +15,36 @@ const config: Config = {
         mono: ['JetBrains Mono', ...fontFamily.mono],
       },
       colors: {
+        // Semantic application colors. These must resolve to CSS variables so
+        // form controls retain contrast when the theme changes.
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
         // FitnessFlow brand palette
         primary: {
-          DEFAULT: '#2563EB',
+          DEFAULT: 'hsl(var(--primary))',
           50: '#EFF6FF',
           100: '#DBEAFE',
           200: '#BFDBFE',
@@ -28,15 +55,15 @@ const config: Config = {
           700: '#1D4ED8',
           800: '#1E40AF',
           900: '#1E3A8A',
-          foreground: '#FFFFFF',
+          foreground: 'hsl(var(--primary-foreground))',
         },
         accent: {
-          DEFAULT: '#06B6D4',
+          DEFAULT: 'hsl(var(--accent))',
           50: '#ECFEFF',
           100: '#CFFAFE',
           500: '#06B6D4',
           600: '#0891B2',
-          foreground: '#FFFFFF',
+          foreground: 'hsl(var(--accent-foreground))',
         },
         success: {
           DEFAULT: '#22C55E',
