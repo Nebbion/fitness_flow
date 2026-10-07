@@ -1,13 +1,80 @@
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Users, Calendar, TrendingUp, Euro } from 'lucide-react'
+import { Users, Calendar } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatDateTime, formatCurrency } from '@/lib/utils'
+import { formatDateTime, getInitials } from '@/lib/utils'
 import type { Metadata } from 'next'
 
 interface PageProps {
   params: Promise<{ locale: string }>
+}
+
+type DashboardTenant = {
+  name: string | null
+  logo_url: string | null
+  brand_primary: string | null
+  brand_accent: string | null
+  plan: string | null
+}
+
+function getBrandColor(value: string | null | undefined, fallback: string) {
+  return value && /^#[0-9A-Fa-f]{6}$/.test(value) ? value : fallback
+}
+
+function DashboardBrandCover({
+  tenant,
+  welcome,
+  dateLabel,
+}: {
+  tenant: DashboardTenant | null
+  welcome: string
+  dateLabel: string
+}) {
+  const tenantName = tenant?.name ?? 'FitnessFlow'
+  const primary = getBrandColor(tenant?.brand_primary, '#2563EB')
+  const accent = getBrandColor(tenant?.brand_accent, '#06B6D4')
+
+  return (
+    <section className="relative overflow-hidden rounded-xl border border-border bg-card text-white shadow-sm">
+      <div
+        className="absolute inset-0"
+        style={{ background: `linear-gradient(135deg, ${primary} 0%, ${accent} 64%, #111827 100%)` }}
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,23,42,0.72),rgba(15,23,42,0.34),rgba(15,23,42,0.14))]" />
+      <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.12)_0,rgba(255,255,255,0.12)_1px,transparent_1px,transparent_18px)] opacity-30" />
+
+      <div className="relative flex min-h-[190px] flex-col justify-between gap-6 p-6 sm:min-h-[220px] sm:flex-row sm:items-center sm:p-8">
+        <div className="max-w-2xl">
+          <p className="text-sm font-medium text-white/80">{dateLabel}</p>
+          <h1 className="mt-3 text-2xl font-semibold leading-tight sm:text-3xl">{welcome}</h1>
+          <p className="mt-2 text-sm text-white/85 sm:text-base">{tenantName}</p>
+          {tenant?.plan && (
+            <span className="mt-5 inline-flex rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+              {tenant.plan}
+            </span>
+          )}
+        </div>
+
+        <div className="flex h-28 w-28 items-center justify-center rounded-xl border border-white/50 bg-white/95 p-3 shadow-sm sm:h-36 sm:w-36">
+          {tenant?.logo_url ? (
+            <img
+              src={tenant.logo_url}
+              alt={tenantName}
+              className="max-h-full max-w-full object-contain"
+            />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center rounded-lg text-3xl font-semibold text-white"
+              style={{ backgroundColor: primary }}
+            >
+              {getInitials(tenantName)}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -18,7 +85,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function DashboardPage({ params }: PageProps) {
   const { locale } = await params
-  const supabase = await createClient()
+  const supabase = await createClient() as any
   const t = await getTranslations({ locale, namespace: 'dashboard' })
   const tAppts = await getTranslations({ locale, namespace: 'appointments' })
 
@@ -27,11 +94,16 @@ export default async function DashboardPage({ params }: PageProps) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id, full_name, role')
+    .select(`
+      tenant_id, full_name, role,
+      tenants (name, logo_url, brand_primary, brand_accent, plan)
+    `)
     .eq('id', user.id)
     .single()
 
   if (!profile?.tenant_id) redirect(`/${locale}/auth/onboarding`)
+
+  const tenant = (Array.isArray(profile.tenants) ? profile.tenants[0] : profile.tenants) as DashboardTenant | null
 
   // Statistiche in parallelo
   const now = new Date()
@@ -87,6 +159,12 @@ export default async function DashboardPage({ params }: PageProps) {
   ])
 
   const firstName = profile.full_name?.split(' ')[0] ?? ''
+  const dateLabel = new Date().toLocaleDateString(locale === 'it' ? 'it-IT' : 'en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   const stats = [
     {
@@ -107,18 +185,11 @@ export default async function DashboardPage({ params }: PageProps) {
 
   return (
     <div className="space-y-8">
-      {/* Saluto */}
-      <div>
-        <h1 className="text-2xl font-semibold">{t('welcome', { name: firstName })}</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {new Date().toLocaleDateString(locale === 'it' ? 'it-IT' : 'en-GB', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
-        </p>
-      </div>
+      <DashboardBrandCover
+        tenant={tenant}
+        welcome={t('welcome', { name: firstName })}
+        dateLabel={dateLabel}
+      />
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
