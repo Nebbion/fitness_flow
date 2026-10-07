@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { FileText, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -12,8 +12,8 @@ const DOC_ICONS: Record<string, string> = {
   medical: '🏥', image: '🖼️', other: '📄',
 }
 
-export default function PortalDocumentsPage({ params }: { params: { locale: string } }) {
-  const { locale } = params
+export default function PortalDocumentsPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = use(params)
   const t = useTranslations('portal.documents')
   const tTypes = useTranslations('documents.types')
   const supabase = createClient()
