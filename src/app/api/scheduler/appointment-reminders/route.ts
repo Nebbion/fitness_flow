@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { decryptWhatsAppToken } from '@/lib/whatsapp/credentials'
 import { sendWhatsAppTemplate } from '@/lib/whatsapp/client'
+import { isSchedulerAuthorized } from '@/lib/scheduler/authorization'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 function value(text: string) {
   return { type: 'text', text }
 }
 
-export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET
-  if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
+async function runAppointmentReminders(request: NextRequest) {
+  if (!isSchedulerAuthorized(request.headers.get('authorization'))) {
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
   }
 
@@ -96,5 +99,13 @@ export async function GET(request: NextRequest) {
     })
     results.push({ id: item.id, status })
   }
-  return NextResponse.json({ processed: results.length, results })
+  return NextResponse.json(
+    { processed: results.length, results },
+    { headers: { 'Cache-Control': 'no-store' } }
+  )
 }
+
+// GET supports schedulers that cannot issue POST requests; both methods use
+// the same authenticated and transactionally claimed worker.
+export const GET = runAppointmentReminders
+export const POST = runAppointmentReminders

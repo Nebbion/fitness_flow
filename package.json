@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types src/schemas/auth.test.ts src/lib/training/schemas.test.ts src/lib/whatsapp/client.test.ts",
+    "test": "node --test --experimental-strip-types src/schemas/auth.test.ts src/lib/training/schemas.test.ts src/lib/whatsapp/client.test.ts src/lib/scheduler/authorization.test.ts",
     "db:generate": "supabase gen types typescript --local > src/types/supabase.ts",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset"

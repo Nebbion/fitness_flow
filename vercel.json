@@ -4,9 +4,6 @@
   "installCommand": "npm install",
   "outputDirectory": ".next",
   "regions": ["fra1"],
-  "crons": [
-    { "path": "/api/cron/appointment-reminders", "schedule": "*/5 * * * *" }
-  ],
   "functions": {
     "src/app/api/ai/generate/route.ts": {
       "maxDuration": 60
@@ -16,6 +13,9 @@
     },
     "src/app/api/webhooks/whatsapp/route.ts": {
       "maxDuration": 15
+    },
+    "src/app/api/scheduler/appointment-reminders/route.ts": {
+      "maxDuration": 60
     }
   },
   "headers": [
