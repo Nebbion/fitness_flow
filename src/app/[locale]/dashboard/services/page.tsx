@@ -32,11 +32,12 @@ export default async function ServicesPage({ params }: PageProps) {
 
   if (!profile?.tenant_id) redirect(`/${locale}/auth/onboarding`)
   if (profile.role === 'STAFF') redirect(`/${locale}/dashboard`)
+  const tenantId = profile.tenant_id
 
   const { data: services } = await supabase
     .from('services')
     .select('*')
-    .eq('tenant_id', profile.tenant_id)
+    .eq('tenant_id', tenantId)
     .order('name', { ascending: true })
 
   const t = await getTranslations({ locale, namespace: 'services' })
@@ -93,7 +94,7 @@ export default async function ServicesPage({ params }: PageProps) {
                     </div>
                     <ServiceForm
                       locale={locale}
-                      tenantId={profile.tenant_id}
+                      tenantId={tenantId}
                       service={service}
                       trigger={
                         <Button variant="ghost" size="sm">Modifica</Button>
@@ -110,7 +111,7 @@ export default async function ServicesPage({ params }: PageProps) {
         <div>
           <ServiceForm
             locale={locale}
-            tenantId={profile.tenant_id}
+            tenantId={tenantId}
             trigger={
               <Button className="w-full">
                 <Plus className="w-4 h-4 mr-2" />

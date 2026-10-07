@@ -11,10 +11,14 @@ export async function GET(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles').select('tenant_id').eq('id', user.id).single()
 
+    if (!profile?.tenant_id) {
+      return NextResponse.json({ error: 'Tenant non trovato' }, { status: 404 })
+    }
+
     const { data, error } = await supabase
       .from('services')
       .select('*')
-      .eq('tenant_id', profile?.tenant_id)
+      .eq('tenant_id', profile.tenant_id)
       .eq('active', true)
       .order('name')
 
@@ -34,7 +38,7 @@ export async function POST(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles').select('tenant_id, role').eq('id', user.id).single()
 
-    if (profile?.role !== 'TENANT_ADMIN') {
+    if (profile?.role !== 'TENANT_ADMIN' || !profile.tenant_id) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
     }
 

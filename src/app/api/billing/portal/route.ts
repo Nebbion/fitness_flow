@@ -18,8 +18,12 @@ export async function POST(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles').select('tenant_id').eq('id', user.id).single()
 
+    if (!profile?.tenant_id) {
+      return NextResponse.redirect(new URL(`/${locale}/auth/onboarding`, request.url))
+    }
+
     const { data: tenant } = await supabase
-      .from('tenants').select('stripe_customer_id').eq('id', profile?.tenant_id).single()
+      .from('tenants').select('stripe_customer_id').eq('id', profile.tenant_id).single()
 
     if (!tenant?.stripe_customer_id) {
       return NextResponse.redirect(

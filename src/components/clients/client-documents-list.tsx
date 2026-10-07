@@ -54,6 +54,9 @@ export function ClientDocumentsList({
 
     setUploading(true)
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Sessione non valida')
+
       const storagePath = `${tenantId}/${clientId}/${Date.now()}_${file.name}`
 
       // Upload su Supabase Storage
@@ -67,7 +70,7 @@ export function ClientDocumentsList({
       const { error: dbError } = await supabase.from('documents').insert({
         client_id: clientId,
         tenant_id: tenantId,
-        uploaded_by: (await supabase.auth.getUser()).data.user?.id,
+        uploaded_by: user.id,
         type: 'other',
         name: file.name,
         storage_path: storagePath,

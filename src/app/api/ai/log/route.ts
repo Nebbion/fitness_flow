@@ -10,10 +10,12 @@ export async function POST(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles').select('tenant_id').eq('id', user.id).single()
 
+    if (!profile?.tenant_id) return NextResponse.json({ ok: false }, { status: 403 })
+
     const body = await request.json()
 
     await supabase.from('ai_usage_logs').insert({
-      tenant_id: profile?.tenant_id,
+      tenant_id: profile.tenant_id,
       user_id: user.id,
       feature: body.feature,
       model: 'gpt-4o',

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { openai, buildSystemPrompt, buildUserPrompt, calculateCost } from '@/lib/ai/openai'
+import { getOpenAIClient, buildSystemPrompt, buildUserPrompt, calculateCost } from '@/lib/ai/openai'
 import type { AIFeature } from '@/lib/ai/openai'
 
 // Usa Edge runtime per supportare lo streaming senza timeout Vercel
@@ -49,13 +49,17 @@ export async function POST(request: NextRequest) {
 
       if (client) {
         clientName = client.full_name
+        const customFields = client.custom_fields
+        const customFieldValues = customFields && typeof customFields === 'object' && !Array.isArray(customFields)
+          ? customFields as Record<string, unknown>
+          : {}
         clientData = {
           nome: client.full_name,
           data_nascita: client.birth_date,
           sesso: client.gender,
           note: client.notes,
           tag: client.tags,
-          ...client.custom_fields,
+          ...customFieldValues,
         }
 
         // Recupera ultimi progressi
@@ -76,7 +80,7 @@ export async function POST(request: NextRequest) {
     const userPrompt = buildUserPrompt(feature, { clientName, clientData, customInstruction })
 
     // Stream response da OpenAI
-    const stream = await openai.chat.completions.create({
+    const stream = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },

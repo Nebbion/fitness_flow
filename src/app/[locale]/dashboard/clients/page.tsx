@@ -156,7 +156,10 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
 
       {/* Tabella */}
       <ClientsTable
-        clients={clients ?? []}
+        clients={(clients ?? []).map(client => ({
+          ...client,
+          tags: client.tags ?? [],
+        }))}
         locale={locale}
         role={profile.role as any}
         totalPages={totalPages}

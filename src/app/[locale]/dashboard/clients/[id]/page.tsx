@@ -7,6 +7,7 @@ import { ClientActions } from '@/components/clients/client-actions'
 import { Badge } from '@/components/ui/index'
 import { formatDate, calcAge } from '@/lib/utils'
 import type { Metadata } from 'next'
+import { normalizeCustomFieldDefinition } from '@/lib/custom-fields'
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>
@@ -160,7 +161,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
         role={profile.role as any}
         tenantId={profile.tenant_id}
         userId={user.id}
-        customFieldDefs={customFieldDefs ?? []}
+        customFieldDefs={(customFieldDefs ?? []).map(normalizeCustomFieldDefinition)}
         counts={{
           appointments: appointmentsCount ?? 0,
           documents: documentsCount ?? 0,

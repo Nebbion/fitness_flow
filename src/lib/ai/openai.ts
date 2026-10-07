@@ -1,8 +1,13 @@
 import OpenAI from 'openai'
 
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+let client: OpenAI | undefined
+
+export function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) throw new Error('Funzionalita AI non configurata')
+  client ??= new OpenAI({ apiKey })
+  return client
+}
 
 export type AIFeature =
   | 'nutrition_plan'

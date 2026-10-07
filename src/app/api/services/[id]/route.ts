@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const { data: profile } = await supabase
       .from('profiles').select('tenant_id, role').eq('id', user.id).single()
 
-    if (profile?.role !== 'TENANT_ADMIN') {
+    if (profile?.role !== 'TENANT_ADMIN' || !profile.tenant_id) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
     }
 
@@ -46,7 +46,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const { data: profile } = await supabase
       .from('profiles').select('tenant_id, role').eq('id', user.id).single()
 
-    if (profile?.role !== 'TENANT_ADMIN') {
+    if (profile?.role !== 'TENANT_ADMIN' || !profile.tenant_id) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
     }
 

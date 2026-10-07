@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { ClientForm } from '@/components/clients/client-form'
 import type { Metadata } from 'next'
+import { normalizeCustomFieldDefinition } from '@/lib/custom-fields'
 
 interface PageProps {
   params: Promise<{ locale: string }>
@@ -86,8 +87,7 @@ export default async function NewClientPage({ params }: PageProps) {
         locale={locale}
         tenantId={profile.tenant_id}
         staffList={staffList ?? []}
-        customFields={customFields ?? []}
-        defaultStaffId={profile.role === 'STAFF' ? user.id : undefined}
+        customFields={(customFields ?? []).map(normalizeCustomFieldDefinition)}
       />
     </div>
   )

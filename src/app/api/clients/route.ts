@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClientSchema } from '@/schemas'
+import type { Json } from '@/types/supabase'
 
 // GET /api/clients — lista clienti del tenant
 export async function GET(request: NextRequest) {
@@ -100,6 +101,7 @@ export async function POST(request: NextRequest) {
         email: parsed.data.email || null,
         phone: parsed.data.phone || null,
         assigned_staff_id: parsed.data.assigned_staff_id || null,
+        custom_fields: parsed.data.custom_fields as Json,
       })
       .select()
       .single()

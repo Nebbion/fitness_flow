@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/types/supabase'
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -14,15 +15,17 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const { data: profile } = await supabase
       .from('profiles').select('tenant_id, role').eq('id', user.id).single()
 
-    if (profile?.role !== 'TENANT_ADMIN') {
+    if (profile?.role !== 'TENANT_ADMIN' || !profile.tenant_id) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
     }
 
     const body = await request.json()
-    const allowed = ['role', 'active']
-    const update = Object.fromEntries(
-      Object.entries(body).filter(([k]) => allowed.includes(k))
-    )
+    const update: Database['public']['Tables']['profiles']['Update'] = {}
+    if (body.role === 'TENANT_ADMIN' || body.role === 'STAFF') update.role = body.role
+    if (typeof body.active === 'boolean') update.active = body.active
+    if (!Object.keys(update).length) {
+      return NextResponse.json({ error: 'Dati non validi' }, { status: 422 })
+    }
 
     const { error } = await supabase
       .from('profiles')
@@ -48,7 +51,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const { data: profile } = await supabase
       .from('profiles').select('tenant_id, role').eq('id', user.id).single()
 
-    if (profile?.role !== 'TENANT_ADMIN') {
+    if (profile?.role !== 'TENANT_ADMIN' || !profile.tenant_id) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
     }
 

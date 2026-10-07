@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { updateClientSchema } from '@/schemas'
+import type { Json } from '@/types/supabase'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -78,6 +79,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         email: parsed.data.email || null,
         phone: parsed.data.phone || null,
         assigned_staff_id: parsed.data.assigned_staff_id || null,
+        custom_fields: parsed.data.custom_fields as Json | undefined,
       })
       .eq('id', id)
       .eq('tenant_id', profile.tenant_id)
