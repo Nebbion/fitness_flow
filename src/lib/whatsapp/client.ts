@@ -15,6 +15,13 @@ export interface WhatsAppConnectionCredentials {
   accessToken: string
 }
 
+export interface WhatsAppSendResult {
+  messageId?: string
+  error?: string
+  retryable?: boolean
+  uncertain?: boolean
+}
+
 const BASE_URL = process.env.WHATSAPP_API_URL ?? 'https://graph.facebook.com/v21.0'
 
 function normalizePhoneNumber(phone: string) {
@@ -24,46 +31,52 @@ function normalizePhoneNumber(phone: string) {
 async function sendMessage(
   credentials: WhatsAppConnectionCredentials,
   payload: Record<string, unknown>
-) {
-  const res = await fetch(`${BASE_URL}/${credentials.phoneNumberId}/messages`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${credentials.accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ messaging_product: 'whatsapp', ...payload }),
-  })
-
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error?.message ?? 'WhatsApp API error')
-
-  return data.messages?.[0]?.id as string | undefined
+) : Promise<WhatsAppSendResult> {
+  try {
+    const res = await fetch(`${BASE_URL}/${credentials.phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${credentials.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ messaging_product: 'whatsapp', ...payload }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      return {
+        error: data.error?.message ?? `WhatsApp API error (${res.status})`,
+        retryable: res.status === 429,
+        uncertain: res.status === 408 || res.status >= 500,
+      }
+    }
+    const messageId = data.messages?.[0]?.id as string | undefined
+    return messageId
+      ? { messageId }
+      : { error: 'Meta non ha restituito l’ID del messaggio', uncertain: true }
+  } catch (error: any) {
+    // A network interruption may happen after Meta accepted the request.
+    return { error: error.message ?? 'Errore di rete WhatsApp', uncertain: true }
+  }
 }
 
 // Invia un messaggio di testo libero
 export async function sendWhatsAppText(
   msg: WhatsAppTextMessage,
   credentials: WhatsAppConnectionCredentials
-): Promise<{ messageId?: string; error?: string }> {
-  try {
-    const messageId = await sendMessage(credentials, {
+): Promise<WhatsAppSendResult> {
+  return sendMessage(credentials, {
       recipient_type: 'individual',
       to: normalizePhoneNumber(msg.to),
       type: 'text',
       text: { body: msg.body, preview_url: false },
     })
-    return { messageId }
-  } catch (err: any) {
-    return { error: err.message }
-  }
 }
 
 export async function sendWhatsAppTemplate(
   msg: WhatsAppTemplateMessage,
   credentials: WhatsAppConnectionCredentials
-): Promise<{ messageId?: string; error?: string }> {
-  try {
-    const messageId = await sendMessage(credentials, {
+): Promise<WhatsAppSendResult> {
+  return sendMessage(credentials, {
       to: normalizePhoneNumber(msg.to),
       type: 'template',
       template: {
@@ -72,10 +85,6 @@ export async function sendWhatsAppTemplate(
         ...(msg.components ? { components: msg.components } : {}),
       },
     })
-    return { messageId }
-  } catch (err: any) {
-    return { error: err.message }
-  }
 }
 
 // Verifica webhook Meta (GET)

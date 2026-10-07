@@ -14,6 +14,7 @@ import { WhatsAppConnectionPanel } from './whatsapp-connection-panel'
 
 interface SettingsTabsProps {
   locale: string
+  role: string
   tenant: any
   adminAccount: {
     email: string
@@ -30,10 +31,11 @@ const TABS = [
   { key: 'customFields', label: 'Campi custom',icon: Sliders },
 ]
 
-export function SettingsTabs({ locale, tenant, adminAccount, customFields, notifRules }: SettingsTabsProps) {
+export function SettingsTabs({ locale, role, tenant, adminAccount, customFields, notifRules }: SettingsTabsProps) {
   const router = useRouter()
   const logoInputRef = useRef<HTMLInputElement | null>(null)
-  const [activeTab, setActiveTab] = useState('company')
+  const isAdmin = role === 'TENANT_ADMIN'
+  const [activeTab, setActiveTab] = useState(isAdmin ? 'company' : 'whatsapp')
   const [saving, setSaving] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
 
@@ -143,7 +145,7 @@ export function SettingsTabs({ locale, tenant, adminAccount, customFields, notif
     <div className="space-y-4">
       {/* Tab bar */}
       <div className="flex border-b border-border">
-        {TABS.map(tab => {
+        {TABS.filter(tab => isAdmin || tab.key === 'whatsapp').map(tab => {
           const Icon = tab.icon
           return (
             <button

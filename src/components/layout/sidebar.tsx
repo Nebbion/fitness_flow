@@ -80,7 +80,7 @@ function getNavItems(locale: string): NavItem[] {
       key: 'settings',
       href: `/${locale}/dashboard/settings`,
       icon: Settings,
-      roles: ['TENANT_ADMIN'],
+      roles: ['TENANT_ADMIN', 'STAFF'],
     },
   ]
 }

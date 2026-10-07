@@ -10,7 +10,7 @@ interface PageProps {
 
 export default async function EditClientPage({ params }: PageProps) {
   const { locale, id } = await params
-  const supabase = await createClient()
+  const supabase = await createClient() as any
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/auth/login`)
@@ -81,6 +81,7 @@ export default async function EditClientPage({ params }: PageProps) {
           tags: client.tags ?? [],
           assigned_staff_id: client.assigned_staff_id ?? '',
           preferred_language: client.preferred_language ?? 'it',
+          whatsapp_reminders_consent: (client as any).whatsapp_reminders_consent ?? false,
           custom_fields: client.custom_fields ?? {},
         }}
       />

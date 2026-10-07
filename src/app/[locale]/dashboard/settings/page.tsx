@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function SettingsPage({ params }: PageProps) {
   const { locale } = await params
-  const supabase = await createClient()
+  const supabase = await createClient() as any
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/auth/login`)
@@ -24,7 +24,7 @@ export default async function SettingsPage({ params }: PageProps) {
   const { data: profile } = await supabase
     .from('profiles').select('tenant_id, role, full_name').eq('id', user.id).single()
 
-  if (!profile?.tenant_id || profile.role !== 'TENANT_ADMIN') redirect(`/${locale}/dashboard`)
+  if (!profile?.tenant_id || !['TENANT_ADMIN', 'STAFF'].includes(profile.role)) redirect(`/${locale}/dashboard`)
 
   const [{ data: tenant }, { data: customFields }, { data: notifRules }] = await Promise.all([
     supabase.from('tenants').select('*').eq('id', profile.tenant_id).single(),
@@ -45,6 +45,7 @@ export default async function SettingsPage({ params }: PageProps) {
       </div>
       <SettingsTabs
         locale={locale}
+        role={profile.role}
         tenant={tenant}
         adminAccount={{
           email: user.email ?? '',

@@ -208,6 +208,16 @@ export function ClientForm({
             />
           </div>
 
+          <label className="flex items-start gap-3 rounded-md border border-border p-3">
+            <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" {...register('whatsapp_reminders_consent')} />
+            <span>
+              <span className="block text-sm font-medium">Consenso promemoria WhatsApp</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">
+                Attiva solo dopo aver raccolto il consenso del cliente a ricevere promemoria sul suo numero.
+              </span>
+            </span>
+          </label>
+
           {/* Tag */}
           <div className="space-y-2">
             <Label>{t('tags')}</Label>

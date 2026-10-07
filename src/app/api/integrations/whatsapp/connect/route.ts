@@ -10,7 +10,7 @@ const connectSchema = z.object({
 })
 
 async function getTenantAdmin() {
-  const supabase = await createClient()
+  const supabase = await createClient() as any
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
@@ -20,8 +20,8 @@ async function getTenantAdmin() {
     .eq('id', user.id)
     .single()
 
-  if (!profile?.tenant_id || profile.role !== 'TENANT_ADMIN') return null
-  return profile
+  if (!profile?.tenant_id || !['TENANT_ADMIN', 'STAFF'].includes(profile.role)) return null
+  return { ...profile, id: user.id }
 }
 
 export async function POST(request: NextRequest) {
@@ -63,11 +63,12 @@ export async function POST(request: NextRequest) {
       ? new Date(Date.now() + Number(tokenData.expires_in) * 1000).toISOString()
       : null
 
-    const admin = createAdminClient()
+    const admin = createAdminClient() as any
     const { error } = await admin
       .from('whatsapp_connections')
       .upsert({
         tenant_id: profile.tenant_id,
+        professional_id: profile.id,
         whatsapp_business_account_id: parsed.data.whatsappBusinessAccountId,
         phone_number_id: parsed.data.phoneNumberId,
         display_phone_number: numberData.display_phone_number ?? null,
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
         status: 'active',
         last_error: null,
         connected_at: new Date().toISOString(),
-      }, { onConflict: 'tenant_id' })
+      }, { onConflict: 'professional_id' })
 
     if (error) throw error
     return NextResponse.json({ ok: true })

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { verifyWebhook, parseInboundMessage } from '@/lib/whatsapp/client'
+import crypto from 'node:crypto'
+
+function validSignature(rawBody: string, signature: string | null) {
+  const secret = process.env.META_APP_SECRET
+  if (!secret || !signature?.startsWith('sha256=')) return false
+  const expected = `sha256=${crypto.createHmac('sha256', secret).update(rawBody).digest('hex')}`
+  return expected.length === signature.length && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
+}
 
 // GET — verifica webhook Meta
 export async function GET(request: NextRequest) {
@@ -19,8 +27,12 @@ export async function GET(request: NextRequest) {
 // POST — ricevi messaggi e status update
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const admin = createAdminClient()
+    const rawBody = await request.text()
+    if (!validSignature(rawBody, request.headers.get('x-hub-signature-256'))) {
+      return NextResponse.json({ error: 'Firma non valida' }, { status: 401 })
+    }
+    const body = JSON.parse(rawBody)
+    const admin = createAdminClient() as any
 
     // Gestione status update (consegna, lettura)
     const statusUpdate = body.entry?.[0]?.changes?.[0]?.value?.statuses?.[0]
@@ -32,6 +44,11 @@ export async function POST(request: NextRequest) {
           ...(statusUpdate.status === 'delivered' ? { delivered_at: new Date().toISOString() } : {}),
           ...(statusUpdate.status === 'read' ? { read_at: new Date().toISOString() } : {}),
         })
+        .eq('wa_message_id', statusUpdate.id)
+
+      await (admin as any)
+        .from('appointment_reminders')
+        .update({ status: statusUpdate.status })
         .eq('wa_message_id', statusUpdate.id)
 
       return NextResponse.json({ ok: true })

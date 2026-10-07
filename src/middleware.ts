@@ -17,6 +17,7 @@ const PUBLIC_PATHS = [
   '/auth/register',
   '/auth/callback',
   '/auth/error',
+  '/train',
   '/api/webhooks',  // webhook Stripe e WhatsApp non autenticati
 ]
 

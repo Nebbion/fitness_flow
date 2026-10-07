@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, Link2, Loader2, Unplug } from 'lucide-react'
+import { CheckCircle2, Link2, Loader2, Save, Unplug } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/index'
@@ -13,6 +13,11 @@ interface Connection {
   status: 'active' | 'disconnected' | 'error'
   last_error: string | null
   connected_at: string
+  reminder_enabled: boolean
+  reminder_minutes: number
+  reminder_template: string
+  reminder_language: string
+  reminder_timezone: string
 }
 
 interface SignupData {
@@ -58,6 +63,14 @@ export function WhatsAppConnectionPanel() {
   const [setupReady, setSetupReady] = useState(false)
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [reminder, setReminder] = useState({
+    reminder_enabled: false,
+    reminder_minutes: 1440,
+    reminder_template: 'appointment_reminder',
+    reminder_language: 'it',
+    reminder_timezone: 'Europe/Rome',
+  })
   const signupDataRef = useRef<SignupData | null>(null)
   const signupResolverRef = useRef<((data: SignupData) => void) | null>(null)
 
@@ -68,6 +81,15 @@ export function WhatsAppConnectionPanel() {
       const data = await response.json()
       if (!response.ok) throw new Error(data.error ?? 'Impossibile leggere lo stato WhatsApp')
       setConnection(data.connection)
+      if (data.connection) {
+        setReminder({
+          reminder_enabled: data.connection.reminder_enabled,
+          reminder_minutes: data.connection.reminder_minutes,
+          reminder_template: data.connection.reminder_template,
+          reminder_language: data.connection.reminder_language,
+          reminder_timezone: data.connection.reminder_timezone,
+        })
+      }
       setSetupReady(data.setupReady)
     } catch (error: any) {
       toast.error(error.message)
@@ -164,6 +186,25 @@ export function WhatsAppConnectionPanel() {
     }
   }
 
+  async function saveReminder() {
+    setSaving(true)
+    try {
+      const response = await fetch('/api/integrations/whatsapp/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reminder),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error ?? 'Salvataggio non riuscito')
+      toast.success('Promemoria WhatsApp aggiornati')
+      await refreshStatus()
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return <div className="h-36 rounded-lg bg-muted animate-pulse" />
   }
@@ -183,7 +224,7 @@ export function WhatsAppConnectionPanel() {
               <div>
                 <p className="text-sm font-medium">{connection.verified_name ?? 'WhatsApp Business collegato'}</p>
                 <p className="text-sm text-muted-foreground">{connection.display_phone_number ?? 'Numero verificato'}</p>
-                <p className="text-xs text-muted-foreground mt-2">Le conferme degli appuntamenti usano questo numero.</p>
+                <p className="text-xs text-muted-foreground mt-2">Conferme e promemoria dei tuoi appuntamenti usano questo numero.</p>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={disconnect}>
@@ -208,6 +249,64 @@ export function WhatsAppConnectionPanel() {
               {connecting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Link2 className="w-4 h-4 mr-2" />}
               Collega WhatsApp Business
             </Button>
+          </div>
+        )}
+        {connected && (
+          <div className="border-t border-border pt-5 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Promemoria appuntamenti</p>
+                <p className="text-xs text-muted-foreground">Sono inviati solo ai clienti che hanno dato il consenso WhatsApp.</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={reminder.reminder_enabled}
+                onChange={event => setReminder(value => ({ ...value, reminder_enabled: event.target.checked }))}
+                className="h-4 w-4 accent-primary"
+                aria-label="Abilita promemoria"
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="space-y-1.5 text-sm">
+                <span className="font-medium">Anticipo</span>
+                <select className="h-10 w-full rounded-md border border-input bg-background px-3" value={reminder.reminder_minutes}
+                  onChange={event => setReminder(value => ({ ...value, reminder_minutes: Number(event.target.value) }))}>
+                  <option value={60}>1 ora prima</option>
+                  <option value={120}>2 ore prima</option>
+                  <option value={720}>12 ore prima</option>
+                  <option value={1440}>24 ore prima</option>
+                  <option value={2880}>48 ore prima</option>
+                </select>
+              </label>
+              <label className="space-y-1.5 text-sm">
+                <span className="font-medium">Fuso orario</span>
+                <select className="h-10 w-full rounded-md border border-input bg-background px-3" value={reminder.reminder_timezone}
+                  onChange={event => setReminder(value => ({ ...value, reminder_timezone: event.target.value }))}>
+                  <option value="Europe/Rome">Europa/Roma</option>
+                  <option value="Europe/London">Europa/Londra</option>
+                  <option value="America/New_York">America/New York</option>
+                </select>
+              </label>
+              <label className="space-y-1.5 text-sm">
+                <span className="font-medium">Template Meta approvato</span>
+                <input className="h-10 w-full rounded-md border border-input bg-background px-3" value={reminder.reminder_template}
+                  onChange={event => setReminder(value => ({ ...value, reminder_template: event.target.value.toLowerCase() }))} />
+              </label>
+              <label className="space-y-1.5 text-sm">
+                <span className="font-medium">Lingua template</span>
+                <select className="h-10 w-full rounded-md border border-input bg-background px-3" value={reminder.reminder_language}
+                  onChange={event => setReminder(value => ({ ...value, reminder_language: event.target.value }))}>
+                  <option value="it">Italiano (it)</option>
+                  <option value="en">English (en)</option>
+                </select>
+              </label>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={saveReminder} disabled={saving}>
+                {saving ? <Loader2 className="animate-spin" /> : <Save />}
+                Salva promemoria
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

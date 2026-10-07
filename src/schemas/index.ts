@@ -99,6 +99,7 @@ export const createClientSchema = z.object({
   tags: z.array(z.string()).optional().default([]),
   assigned_staff_id: z.string().uuid().optional().or(z.literal('')),
   preferred_language: z.enum(['it', 'en']).optional().default('it'),
+  whatsapp_reminders_consent: z.boolean().optional().default(false),
   custom_fields: z.record(z.unknown()).optional().default({}),
 })
 

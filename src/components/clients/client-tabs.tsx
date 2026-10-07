@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Calendar, FileText, TrendingUp, User } from 'lucide-react'
+import { Calendar, Dumbbell, FileText, TrendingUp, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ClientOverview } from './client-overview'
 import { ClientAppointmentsList } from './client-appointments-list'
 import { ClientDocumentsList } from './client-documents-list'
 import { ClientProgressPanel } from './client-progress-panel'
+import { TrainingPlanPanel } from '@/components/training/training-plan-panel'
 import type { CustomFieldDefinition, UserRole } from '@/types'
 
 interface ClientTabsProps {
@@ -41,6 +42,7 @@ export function ClientTabs({
     { key: 'appointments',  label: t('appointments'),  icon: Calendar,  count: counts.appointments },
     { key: 'documents',     label: t('documents'),     icon: FileText,  count: counts.documents },
     { key: 'progress',      label: t('progress'),      icon: TrendingUp,count: counts.progress },
+    { key: 'training',      label: 'Allenamento',      icon: Dumbbell,  count: null },
   ]
 
   return (
@@ -110,6 +112,7 @@ export function ClientTabs({
             tenantId={tenantId}
           />
         )}
+        {activeTab === 'training' && <TrainingPlanPanel clientId={client.id} locale={locale} />}
       </div>
     </div>
   )

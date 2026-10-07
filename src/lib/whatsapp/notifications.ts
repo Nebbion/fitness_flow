@@ -7,11 +7,11 @@ function templateValue(value: string) {
 }
 
 export async function sendAppointmentConfirmation(appointmentId: string) {
-  const admin = createAdminClient()
+  const admin = createAdminClient() as any
   const { data: appointment } = await admin
     .from('appointments')
     .select(`
-      id, tenant_id, start_at,
+      id, tenant_id, staff_id, start_at,
       clients (id, full_name, phone, preferred_language),
       services (name),
       tenants (name, timezone)
@@ -49,6 +49,7 @@ export async function sendAppointmentConfirmation(appointmentId: string) {
     .from('whatsapp_connections')
     .select('phone_number_id, access_token_encrypted')
     .eq('tenant_id', appointment.tenant_id)
+    .eq('professional_id', appointment.staff_id)
     .eq('status', 'active')
     .maybeSingle()
   if (!connection) return

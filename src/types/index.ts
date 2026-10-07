@@ -89,6 +89,7 @@ export interface Profile {
   avatar_url: string | null
   phone: string | null
   preferred_language: PreferredLanguage
+  whatsapp_reminders_consent: boolean
   active: boolean
   created_at: string
   updated_at: string
