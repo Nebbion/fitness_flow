@@ -17,9 +17,10 @@ interface LoginFormProps {
   locale: string
   redirectTo?: string
   initialError?: string
+  initialSuccess?: string
 }
 
-export function LoginForm({ locale, redirectTo, initialError }: LoginFormProps) {
+export function LoginForm({ locale, redirectTo, initialError, initialSuccess }: LoginFormProps) {
   const t = useTranslations('auth.login')
   const tErrors = useTranslations('errors')
   const router = useRouter()
@@ -151,6 +152,11 @@ export function LoginForm({ locale, redirectTo, initialError }: LoginFormProps) 
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {initialSuccess && (
+        <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+          <p className="text-sm text-green-700 dark:text-green-400">{initialSuccess}</p>
+        </div>
+      )}
       {/* Errore globale */}
       {(errors.root || initialError) && (
         <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
@@ -185,7 +191,7 @@ export function LoginForm({ locale, redirectTo, initialError }: LoginFormProps) 
         <div className="flex items-center justify-between">
           <Label htmlFor="password">{t('password')}</Label>
           <a
-            href={`/${locale}/auth/reset-password`}
+            href={`/${locale}/auth/forgot-password`}
             className="text-xs text-muted-foreground hover:text-primary"
           >
             {t('forgotPassword')}

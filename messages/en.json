@@ -76,7 +76,26 @@
       "magicLinkSent": "We've sent you a sign-in link via email",
       "resendConfirmation": "Resend confirmation link",
       "confirmationSent": "We've sent you a new confirmation link.",
-      "confirmationSameBrowser": "Request a new confirmation link and open it in the same browser profile used to create the account."
+      "confirmationSameBrowser": "Request a new confirmation link and open it in the same browser profile used to create the account.",
+      "passwordUpdated": "Password updated. You can now sign in with your new password."
+    },
+    "passwordRecovery": {
+      "requestTitle": "Reset your password",
+      "requestSubtitle": "Enter the email address associated with your account",
+      "email": "Email address",
+      "send": "Send recovery link",
+      "sending": "Sending...",
+      "sentTitle": "Check your email",
+      "sentMessage": "If an account exists for this address, you will receive a link to set a new password. Open it in the same browser used to request it.",
+      "backToLogin": "Back to sign in",
+      "resetTitle": "Set a new password",
+      "resetSubtitle": "Choose a secure password with at least 8 characters",
+      "password": "New password",
+      "confirmPassword": "Confirm new password",
+      "update": "Update password",
+      "updating": "Updating...",
+      "invalidLink": "This link is invalid or has expired.",
+      "requestNewLink": "Request a new link"
     },
     "register": {
       "title": "Create your account",

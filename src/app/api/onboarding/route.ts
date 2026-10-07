@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import type { OnboardingInput } from '@/schemas'
+import { onboardingSchema } from '@/schemas'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,8 +13,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
     }
 
-    const body: OnboardingInput = await request.json()
+    const parsed = onboardingSchema.safeParse(await request.json())
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Dati di configurazione non validi', details: parsed.error.flatten() },
+        { status: 422 }
+      )
+    }
+
+    const body = parsed.data
     const { company_name, slug, profession, logo_url, brand_primary, brand_accent, locale, timezone } = body
+
+    // Impedisce di creare un secondo studio ripetendo o duplicando la richiesta.
+    const { data: currentProfile } = await admin
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single()
+    if (currentProfile?.tenant_id) {
+      return NextResponse.json({ error: 'Account già configurato' }, { status: 409 })
+    }
 
     // Verifica slug disponibile
     const { data: existingTenant } = await admin
@@ -54,21 +72,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Aggiorna profilo utente con tenant_id e ruolo TENANT_ADMIN
-    const { error: profileError } = await admin
+    const { data: claimedProfile, error: profileError } = await admin
       .from('profiles')
       .update({
         tenant_id: tenant.id,
         role: 'TENANT_ADMIN',
       })
       .eq('id', user.id)
+      .is('tenant_id', null)
+      .select('id')
+      .maybeSingle()
 
-    if (profileError) {
+    if (profileError || !claimedProfile) {
       console.error('Profile update error:', profileError)
       // Rollback: elimina il tenant
       await admin.from('tenants').delete().eq('id', tenant.id)
       return NextResponse.json(
-        { error: profileError.message ?? 'Errore aggiornamento profilo' },
-        { status: 500 }
+        { error: profileError?.message ?? 'Account già configurato da un’altra richiesta' },
+        { status: profileError ? 500 : 409 }
       )
     }
 

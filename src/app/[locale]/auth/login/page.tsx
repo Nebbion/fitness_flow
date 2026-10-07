@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 
 interface PageProps {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ redirect?: string; error?: string }>
+  searchParams: Promise<{ redirect?: string; error?: string; reset?: string }>
 }
 
 export async function generateMetadata({
@@ -21,7 +21,7 @@ export async function generateMetadata({
 
 export default async function LoginPage({ params, searchParams }: PageProps) {
   const { locale } = await params
-  const { redirect: redirectTo, error } = await searchParams
+  const { redirect: redirectTo, error, reset } = await searchParams
 
   // Se già autenticato, redirige
   const supabase = await createClient()
@@ -49,6 +49,7 @@ export default async function LoginPage({ params, searchParams }: PageProps) {
           locale={locale}
           redirectTo={redirectTo}
           initialError={initialError}
+          initialSuccess={reset === 'success' ? t('passwordUpdated') : undefined}
         />
       </div>
 

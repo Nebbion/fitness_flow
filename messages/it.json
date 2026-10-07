@@ -76,7 +76,26 @@
       "magicLinkSent": "Ti abbiamo inviato un link di accesso via email",
       "resendConfirmation": "Invia di nuovo il link di conferma",
       "confirmationSent": "Ti abbiamo inviato un nuovo link di conferma.",
-      "confirmationSameBrowser": "Richiedi un nuovo link di conferma e aprilo nello stesso browser e profilo in cui hai creato l'account."
+      "confirmationSameBrowser": "Richiedi un nuovo link di conferma e aprilo nello stesso browser e profilo in cui hai creato l'account.",
+      "passwordUpdated": "Password aggiornata. Ora puoi accedere con la nuova password."
+    },
+    "passwordRecovery": {
+      "requestTitle": "Recupera la password",
+      "requestSubtitle": "Inserisci l'email associata al tuo account",
+      "email": "Indirizzo email",
+      "send": "Invia link di recupero",
+      "sending": "Invio in corso...",
+      "sentTitle": "Controlla la tua email",
+      "sentMessage": "Se esiste un account associato a questo indirizzo, riceverai un link per impostare una nuova password. Aprilo nello stesso browser usato per richiederlo.",
+      "backToLogin": "Torna all'accesso",
+      "resetTitle": "Imposta una nuova password",
+      "resetSubtitle": "Scegli una password sicura di almeno 8 caratteri",
+      "password": "Nuova password",
+      "confirmPassword": "Conferma nuova password",
+      "update": "Aggiorna password",
+      "updating": "Aggiornamento...",
+      "invalidLink": "Il link non è valido o è scaduto.",
+      "requestNewLink": "Richiedi un nuovo link"
     },
     "register": {
       "title": "Crea il tuo account",

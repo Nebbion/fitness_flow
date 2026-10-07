@@ -46,6 +46,21 @@ export const loginSchema = z.object({
     .min(8, { message: 'errors.minLength' }),
 })
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().min(1, { message: 'errors.required' }).email({ message: 'errors.invalidEmail' }),
+})
+
+export const resetPasswordSchema = z.object({
+  password: z.string().min(8, { message: 'errors.minLength' }).max(72, { message: 'errors.maxLength' }),
+  password_confirm: z.string(),
+}).refine(data => data.password === data.password_confirm, {
+  message: 'errors.passwordMismatch',
+  path: ['password_confirm'],
+})
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
+
 export const registerSchema = z
   .object({
     full_name: z

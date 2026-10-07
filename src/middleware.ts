@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
 import { routing } from './i18n/routing'
@@ -17,6 +17,8 @@ const PUBLIC_PATHS = [
   '/auth/register',
   '/auth/callback',
   '/auth/error',
+  '/auth/forgot-password',
+  '/auth/reset-password',
   '/train',
   '/api/webhooks',  // webhook Stripe e WhatsApp non autenticati
 ]
@@ -55,7 +57,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )

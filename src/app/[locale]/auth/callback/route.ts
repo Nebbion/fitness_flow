@@ -9,20 +9,24 @@ export async function GET(
   const { searchParams, origin } = request.nextUrl
 
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? `/${locale}`
+  const requestedNext = searchParams.get('next') ?? `/${locale}`
+  const next = requestedNext.startsWith('/') && !requestedNext.startsWith('//')
+    ? requestedNext
+    : `/${locale}`
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
 
   // Gestione errori da Supabase Auth
   if (error) {
     console.error('Auth callback error:', error, errorDescription)
-    return NextResponse.redirect(
-      `${origin}/${locale}/auth/login?error=${encodeURIComponent(errorDescription ?? error)}`
-    )
+    const errorPath = next === `/${locale}/auth/reset-password`
+      ? `/${locale}/auth/forgot-password`
+      : `/${locale}/auth/login`
+    return NextResponse.redirect(`${origin}${errorPath}?error=${encodeURIComponent(errorDescription ?? error)}`)
   }
 
   if (code) {
-    const supabase = await createClient()
+    const supabase = await createClient() as any
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
     if (exchangeError) {
@@ -31,9 +35,16 @@ export async function GET(
         ? 'confirmation_same_browser'
         : exchangeError.message
 
-      return NextResponse.redirect(
-        `${origin}/${locale}/auth/login?error=${encodeURIComponent(callbackError)}`
-      )
+      const exchangeErrorPath = next === `/${locale}/auth/reset-password`
+        ? `/${locale}/auth/forgot-password`
+        : `/${locale}/auth/login`
+      return NextResponse.redirect(`${origin}${exchangeErrorPath}?error=${encodeURIComponent(callbackError)}`)
+    }
+
+    // Il recupero password deve arrivare alla schermata dedicata anche per
+    // account che non hanno ancora completato l'onboarding.
+    if (next === `/${locale}/auth/reset-password`) {
+      return NextResponse.redirect(`${origin}${next}`)
     }
 
     // Controlla se il profilo ha un tenant (se no, manda all'onboarding)
