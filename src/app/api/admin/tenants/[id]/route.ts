@@ -10,6 +10,7 @@ interface Params {
 const tenantUpdateSchema = z.object({
   plan: z.enum(['trial', 'starter', 'professional', 'business']).optional(),
   status: z.enum(['active', 'inactive', 'suspended', 'cancelled']).optional(),
+  logo_url: z.union([z.string().trim().url(), z.literal(''), z.null()]).optional(),
   max_clients: z.number().int().min(0).max(999999).optional(),
   trial_ends_at: z.string().datetime({ offset: true }).nullable().optional(),
 })
@@ -38,6 +39,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const update: Record<string, unknown> = { ...parsed.data }
     if (parsed.data.plan && parsed.data.max_clients === undefined) {
       update.max_clients = DEFAULT_PLAN_LIMITS[parsed.data.plan]
+    }
+    if ('logo_url' in update) {
+      const logoUrl = update.logo_url
+      update.logo_url = typeof logoUrl === 'string' ? logoUrl.trim() || null : null
     }
 
     if (Object.keys(update).length === 0) {

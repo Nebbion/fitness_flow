@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, Plus, Trash2, Building2, Bell, Sliders, MessageCircle } from 'lucide-react'
+import { Loader2, Plus, Trash2, Building2, Bell, Sliders, MessageCircle, ImageIcon, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/index'
+import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import type { CustomFieldDefinition } from '@/types'
 import { WhatsAppConnectionPanel } from './whatsapp-connection-panel'
@@ -31,12 +32,15 @@ const TABS = [
 
 export function SettingsTabs({ locale, tenant, adminAccount, customFields, notifRules }: SettingsTabsProps) {
   const router = useRouter()
+  const logoInputRef = useRef<HTMLInputElement | null>(null)
   const [activeTab, setActiveTab] = useState('company')
   const [saving, setSaving] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   // Company form state
   const [companyForm, setCompanyForm] = useState({
     name: tenant?.name ?? '',
+    logo_url: tenant?.logo_url ?? '',
     brand_primary: tenant?.brand_primary ?? '#2563EB',
     brand_accent: tenant?.brand_accent ?? '#06B6D4',
     timezone: tenant?.timezone ?? 'Europe/Rome',
@@ -58,6 +62,49 @@ export function SettingsTabs({ locale, tenant, adminAccount, customFields, notif
       toast.error(err.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function uploadLogo(file?: File) {
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Seleziona un file immagine valido')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Il logo deve essere inferiore a 5MB')
+      return
+    }
+
+    setUploadingLogo(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Non autenticato')
+
+      const extension = file.name.split('.').pop()?.toLowerCase()
+      const safeExtension = extension && ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension)
+        ? extension
+        : 'png'
+      const path = `${user.id}/tenant-logo-${Date.now()}.${safeExtension}`
+
+      const { error } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, {
+          cacheControl: '3600',
+          contentType: file.type,
+          upsert: true,
+        })
+
+      if (error) throw error
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      setCompanyForm(form => ({ ...form, logo_url: data.publicUrl }))
+      toast.success('Logo caricato. Salva le impostazioni per applicarlo.')
+    } catch (err: any) {
+      toast.error(err.message ?? 'Caricamento logo non riuscito')
+    } finally {
+      setUploadingLogo(false)
     }
   }
 
@@ -89,6 +136,8 @@ export function SettingsTabs({ locale, tenant, adminAccount, customFields, notif
     [-120]: '2h prima',
     4320: '3gg dopo',
   }
+
+  const logoUrl = companyForm.logo_url.trim()
 
   return (
     <div className="space-y-4">
@@ -125,6 +174,64 @@ export function SettingsTabs({ locale, tenant, adminAccount, customFields, notif
                 value={companyForm.name}
                 onChange={e => setCompanyForm(f => ({ ...f, name: e.target.value }))}
               />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[5rem_1fr] sm:items-end">
+              <div className="w-20 h-20 rounded-lg border border-border bg-muted flex items-center justify-center overflow-hidden">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo studio" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Logo studio</Label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    type="url"
+                    value={companyForm.logo_url}
+                    onChange={e => setCompanyForm(f => ({ ...f, logo_url: e.target.value }))}
+                    placeholder="https://esempio.it/logo.png"
+                    className="sm:min-w-0 sm:flex-1"
+                  />
+                  <div className="flex gap-2">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="sr-only"
+                      onChange={async event => {
+                        await uploadLogo(event.currentTarget.files?.[0])
+                        event.currentTarget.value = ''
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadingLogo || saving}
+                      className="flex-1 sm:flex-none"
+                    >
+                      {uploadingLogo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      Carica
+                    </Button>
+                    {logoUrl && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCompanyForm(f => ({ ...f, logo_url: '' }))}
+                        aria-label="Rimuovi logo"
+                        className="shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Usa un URL pubblico di un'immagine PNG, JPG, WebP o GIF.
+                </p>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -206,7 +313,7 @@ export function SettingsTabs({ locale, tenant, adminAccount, customFields, notif
               </div>
             </div>
             <div className="flex justify-end pt-2">
-              <Button onClick={saveCompany} disabled={saving}>
+              <Button onClick={saveCompany} disabled={saving || uploadingLogo}>
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Salva impostazioni
               </Button>

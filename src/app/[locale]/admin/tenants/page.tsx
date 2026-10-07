@@ -25,6 +25,7 @@ type AdminTenantRow = {
   id: string
   name: string
   slug: string
+  logo_url: string | null
   brand_primary: string | null
   profession: string
   plan: string
@@ -96,6 +97,27 @@ function pageHref(locale: string, page: number, filters: { q?: string; status?: 
   if (filters.plan) params.set('plan', filters.plan)
   params.set('page', String(page))
   return `/${locale}/admin/tenants?${params.toString()}`
+}
+
+function TenantLogo({ tenant }: { tenant: Pick<AdminTenantRow, 'name' | 'logo_url' | 'brand_primary'> }) {
+  if (tenant.logo_url) {
+    return (
+      <img
+        src={tenant.logo_url}
+        alt={tenant.name}
+        className="w-9 h-9 rounded-full object-cover border border-border shrink-0"
+      />
+    )
+  }
+
+  return (
+    <div
+      className="w-9 h-9 rounded-full text-white text-xs font-semibold flex items-center justify-center shrink-0"
+      style={{ backgroundColor: tenant.brand_primary ?? '#2563EB' }}
+    >
+      {getInitials(tenant.name)}
+    </div>
+  )
 }
 
 export default async function AdminTenantsPage({ params, searchParams }: PageProps) {
@@ -284,12 +306,7 @@ export default async function AdminTenantsPage({ params, searchParams }: PagePro
                     <tr key={tenant.id} className="hover:bg-accent/30 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div
-                            className="w-9 h-9 rounded-full text-white text-xs font-semibold flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: tenant.brand_primary ?? '#2563EB' }}
-                          >
-                            {getInitials(tenant.name)}
-                          </div>
+                          <TenantLogo tenant={tenant} />
                           <div>
                             <p className="font-medium">{tenant.name}</p>
                             <p className="text-xs text-muted-foreground">
@@ -324,6 +341,7 @@ export default async function AdminTenantsPage({ params, searchParams }: PagePro
                           tenantId={tenant.id}
                           currentPlan={planKey}
                           currentStatus={statusKey}
+                          logoUrl={tenant.logo_url}
                           maxClients={tenant.max_clients}
                         />
                       </td>
@@ -352,10 +370,13 @@ export default async function AdminTenantsPage({ params, searchParams }: PagePro
                 <Card key={tenant.id}>
                   <CardContent className="p-4 space-y-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium">{tenant.name}</p>
-                        <p className="text-xs text-muted-foreground">{tenant.slug} · {tenant.profession}</p>
-                        <p className="text-xs text-muted-foreground">Admin: {owner?.full_name ?? 'non assegnato'}</p>
+                      <div className="flex min-w-0 items-start gap-3">
+                        <TenantLogo tenant={tenant} />
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{tenant.name}</p>
+                          <p className="text-xs text-muted-foreground">{tenant.slug} · {tenant.profession}</p>
+                          <p className="text-xs text-muted-foreground">Admin: {owner?.full_name ?? 'non assegnato'}</p>
+                        </div>
                       </div>
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/${locale}/admin/tenants/${tenant.id}`}>Dettaglio</Link>
@@ -375,6 +396,7 @@ export default async function AdminTenantsPage({ params, searchParams }: PagePro
                       tenantId={tenant.id}
                       currentPlan={planKey}
                       currentStatus={statusKey}
+                      logoUrl={tenant.logo_url}
                       maxClients={tenant.max_clients}
                     />
                   </CardContent>

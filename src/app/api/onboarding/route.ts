@@ -4,8 +4,8 @@ import type { OnboardingInput } from '@/schemas'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const admin = createAdminClient()
+    const supabase = await createClient() as any
+    const admin = createAdminClient() as any
 
     // Verifica autenticazione
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body: OnboardingInput = await request.json()
-    const { company_name, slug, profession, brand_primary, brand_accent, locale, timezone } = body
+    const { company_name, slug, profession, logo_url, brand_primary, brand_accent, locale, timezone } = body
 
     // Verifica slug disponibile
     const { data: existingTenant } = await admin
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
         name: company_name,
         slug,
         profession,
+        logo_url: logo_url?.trim() || null,
         brand_primary: brand_primary ?? '#2563EB',
         brand_accent: brand_accent ?? '#06B6D4',
         locale: locale ?? 'it',

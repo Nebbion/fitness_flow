@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, Save } from 'lucide-react'
+import { ImageIcon, Loader2, Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { TenantPlan, TenantStatus } from '@/types'
 
@@ -25,6 +25,7 @@ interface AdminTenantActionsProps {
   tenantId: string
   currentPlan: TenantPlan
   currentStatus: TenantStatus
+  logoUrl?: string | null
   maxClients: number
 }
 
@@ -32,11 +33,13 @@ export function AdminTenantActions({
   tenantId,
   currentPlan,
   currentStatus,
+  logoUrl: currentLogoUrl,
   maxClients,
 }: AdminTenantActionsProps) {
   const router = useRouter()
   const [plan, setPlan] = useState<TenantPlan>(currentPlan)
   const [status, setStatus] = useState<TenantStatus>(currentStatus)
+  const [logoUrl, setLogoUrl] = useState(currentLogoUrl ?? '')
   const [clientLimit, setClientLimit] = useState(String(maxClients))
   const [loading, setLoading] = useState(false)
 
@@ -56,6 +59,7 @@ export function AdminTenantActions({
         body: JSON.stringify({
           plan,
           status,
+          logo_url: logoUrl.trim() || null,
           max_clients: parsedClientLimit,
         }),
       })
@@ -71,8 +75,42 @@ export function AdminTenantActions({
     }
   }
 
+  const normalizedLogoUrl = logoUrl.trim()
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-md border border-border bg-muted flex items-center justify-center overflow-hidden shrink-0">
+          {normalizedLogoUrl ? (
+            <img src={normalizedLogoUrl} alt="Logo tenant" className="w-full h-full object-cover" />
+          ) : (
+            <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
+          )}
+        </div>
+        <input
+          aria-label="URL logo"
+          type="url"
+          value={logoUrl}
+          onChange={event => setLogoUrl(event.target.value)}
+          placeholder="Logo URL"
+          className="h-8 w-44 rounded-md border border-input bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          disabled={loading}
+        />
+        {normalizedLogoUrl && (
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            onClick={() => setLogoUrl('')}
+            disabled={loading}
+            aria-label="Rimuovi logo"
+            className="h-8 w-8"
+          >
+            <X className="w-3.5 h-3.5" />
+          </Button>
+        )}
+      </div>
+
       <select
         aria-label="Piano"
         value={plan}

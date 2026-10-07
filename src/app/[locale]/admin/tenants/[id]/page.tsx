@@ -5,7 +5,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { AdminTenantActions } from '@/components/admin/admin-tenant-actions'
 import { Button } from '@/components/ui/button'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/index'
-import { formatDate, formatDateTime } from '@/lib/utils'
+import { formatDate, formatDateTime, getInitials } from '@/lib/utils'
 import type { Metadata } from 'next'
 import type { TenantPlan, TenantStatus } from '@/types'
 
@@ -19,6 +19,8 @@ type TenantDetailRow = {
   id: string
   name: string
   slug: string
+  logo_url: string | null
+  brand_primary: string | null
   profession: string
   plan: string
   status: string
@@ -191,16 +193,36 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
               Professionisti
             </Link>
           </Button>
-          <h1 className="text-2xl font-semibold">{tenant.name}</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {tenant.slug} · {tenant.profession} · creato il {formatDate(tenant.created_at, 'it-IT')}
-          </p>
+
+          <div className="flex items-center gap-4">
+            {tenant.logo_url ? (
+              <img
+                src={tenant.logo_url}
+                alt={tenant.name}
+                className="w-14 h-14 rounded-xl object-cover border border-border shrink-0"
+              />
+            ) : (
+              <div
+                className="w-14 h-14 rounded-xl text-white text-base font-semibold flex items-center justify-center shrink-0"
+                style={{ backgroundColor: tenant.brand_primary ?? '#2563EB' }}
+              >
+                {getInitials(tenant.name)}
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl font-semibold">{tenant.name}</h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                {tenant.slug} · {tenant.profession} · creato il {formatDate(tenant.created_at, 'it-IT')}
+              </p>
+            </div>
+          </div>
         </div>
 
         <AdminTenantActions
           tenantId={tenant.id}
           currentPlan={planKey}
           currentStatus={statusKey}
+          logoUrl={tenant.logo_url}
           maxClients={tenant.max_clients}
         />
       </div>
@@ -239,6 +261,7 @@ export default async function AdminTenantDetailPage({ params }: PageProps) {
               <Info label="Admin principale" value={owner?.full_name ?? 'Non assegnato'} />
               <Info label="Timezone" value={tenant.timezone} />
               <Info label="Lingua" value={tenant.locale.toUpperCase()} />
+              <Info label="Logo" value={tenant.logo_url ? 'Configurato' : 'Non configurato'} />
               <Info label="Trial termina" value={tenant.trial_ends_at ? formatDate(tenant.trial_ends_at, 'it-IT') : 'Non impostato'} />
               <Info label="Stripe customer" value={tenant.stripe_customer_id ?? 'Non collegato'} />
               <Info label="Stripe subscription" value={tenant.stripe_subscription_id ?? 'Non collegata'} />
