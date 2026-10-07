@@ -200,8 +200,10 @@ export function SettingsTabs({ locale, tenant, adminAccount, customFields, notif
                       accept="image/png,image/jpeg,image/webp,image/gif"
                       className="sr-only"
                       onChange={async event => {
-                        await uploadLogo(event.currentTarget.files?.[0])
-                        event.currentTarget.value = ''
+                        const input = event.currentTarget
+                        const file = input.files?.[0]
+                        input.value = ''
+                        await uploadLogo(file)
                       }}
                     />
                     <Button
