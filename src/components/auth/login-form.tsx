@@ -18,9 +18,18 @@ interface LoginFormProps {
   redirectTo?: string
   initialError?: string
   initialSuccess?: string
+  requiredRole?: 'SUPER_ADMIN'
+  accent?: 'default' | 'admin'
 }
 
-export function LoginForm({ locale, redirectTo, initialError, initialSuccess }: LoginFormProps) {
+export function LoginForm({
+  locale,
+  redirectTo,
+  initialError,
+  initialSuccess,
+  requiredRole,
+  accent = 'default',
+}: LoginFormProps) {
   const t = useTranslations('auth.login')
   const tErrors = useTranslations('errors')
   const router = useRouter()
@@ -82,6 +91,19 @@ export function LoginForm({ locale, redirectTo, initialError, initialSuccess }: 
       if (error) {
         setError('root', { message: t('error') })
         return
+      }
+
+      if (requiredRole) {
+        const { data: { user } } = await supabase.auth.getUser()
+        const { data: profile } = user
+          ? await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+          : { data: null }
+
+        if (profile?.role !== requiredRole) {
+          await supabase.auth.signOut()
+          setError('root', { message: 'Questo accesso è riservato al Super Admin della piattaforma.' })
+          return
+        }
       }
 
       // Redirect dopo login
@@ -227,7 +249,13 @@ export function LoginForm({ locale, redirectTo, initialError, initialSuccess }: 
       </div>
 
       {/* Submit */}
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button
+        type="submit"
+        className={accent === 'admin'
+          ? 'w-full bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500'
+          : 'w-full'}
+        disabled={isLoading}
+      >
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -244,7 +272,7 @@ export function LoginForm({ locale, redirectTo, initialError, initialSuccess }: 
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">oppure</span>
+          <span className={`${accent === 'admin' ? 'bg-white dark:bg-zinc-950' : 'bg-background'} px-2 text-muted-foreground`}>oppure</span>
         </div>
       </div>
 
