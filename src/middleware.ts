@@ -19,6 +19,7 @@ const PUBLIC_PATHS = [
   '/auth/error',
   '/auth/forgot-password',
   '/auth/reset-password',
+  '/superadmin/login',
   '/train',
   '/api/webhooks',  // webhook Stripe e WhatsApp non autenticati
 ]
@@ -82,19 +83,18 @@ export async function middleware(request: NextRequest) {
   // ─── 6. Utente non autenticato → redirect al login ─────────
   if (!user) {
     const locale = pathname.match(/^\/(it|en)/)?.[1] ?? 'it'
-    const loginUrl = new URL(`/${locale}/auth/login`, request.url)
+    const loginPath = pathnameWithoutLocale.startsWith('/admin')
+      ? `/${locale}/superadmin/login`
+      : `/${locale}/auth/login`
+    const loginUrl = new URL(loginPath, request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
   // ─── 7. Estrai ruolo dal JWT custom claims ─────────────────
-  const jwt = user.app_metadata
-  const userRole = (user as any).user_role ||
-    (await supabase.auth.getSession()).data.session?.access_token
-      ? parseJwtRole(
-          (await supabase.auth.getSession()).data.session?.access_token ?? ''
-        )
-      : null
+  const { data: { session } } = await supabase.auth.getSession()
+  const userRole = (user as any).user_role
+    ?? parseJwtRole(session?.access_token ?? '')
 
   // ─── 8. Controllo accesso per rotta ────────────────────────
   const matchedRoute = Object.keys(PROTECTED_ROUTES).find(route =>
