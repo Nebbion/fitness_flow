@@ -139,11 +139,12 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
               const exercise = session.plan_snapshot?.exercises?.find((item: any) => item.id === entry.exerciseId)
               return <p key={entry.exerciseId} className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">{exercise?.name ?? 'Esercizio'}:</span>{' '}
-                {entry.sets?.map((set: any) => `${set.reps ?? '-'} rep × ${set.weightKg ?? '-'} kg`).join(' · ')}
+                {entry.sets?.map((set: any) => `${set.reps ?? '-'} rep × ${set.weightKg ?? '-'} kg${set.notes ? ` (${set.notes})` : ''}`).join(' · ')}
                 {entry.notes ? ` · ${entry.notes}` : ''}
               </p>
             })}
           </div>}
+          {session.notes && <p className="mt-2 text-xs text-muted-foreground"><span className="font-medium text-foreground">Note sessione:</span> {session.notes}</p>}
         </div>)}
         {sessions.length === 0 && <p className="px-6 py-5 text-sm text-muted-foreground">Nessuna sessione registrata.</p>}
       </CardContent>

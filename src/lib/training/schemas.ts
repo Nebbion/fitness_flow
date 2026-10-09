@@ -33,6 +33,7 @@ export const sessionActionSchema = z.discriminatedUnion('action', [
     version: z.number().int().positive(),
     mutationId: z.string().uuid(),
     entries: sessionEntriesSchema,
+    notes: z.string().max(2000).default(''),
   }),
 ])
 

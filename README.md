@@ -101,6 +101,13 @@ Apri [http://localhost:3000](http://localhost:3000)
 | Variabile | Descrizione |
 |-----------|-------------|
 | `OPENAI_API_KEY` | API key OpenAI |
+| `PROGRESS_AI_PROVIDER` | Provider progressi: `openai` o `openai-compatible` |
+| `PROGRESS_AI_MODEL` | Modello usato per l'analisi progressi |
+| `PROGRESS_AI_API_KEY` | API key dedicata opzionale (fallback a `OPENAI_API_KEY` per OpenAI) |
+| `PROGRESS_AI_BASE_URL` | Base URL richiesta per provider OpenAI-compatible |
+| `PROGRESS_AI_DAILY_LIMIT` | Analisi per cliente nelle ultime 24 ore (default 5, max 20) |
+
+Configurazione e garanzie di privacy della dashboard: [`docs/training-progress.md`](docs/training-progress.md).
 
 ### Resend
 | Variabile | Descrizione |
@@ -147,6 +154,8 @@ Le migrations si trovano in `supabase/migrations/`:
 | `003_indexes_rls.sql` | Indici di performance + tutte le RLS policies |
 | `004_storage_seed.sql` | Bucket Supabase Storage + funzioni seed per tenant |
 | `005_jwt_hook.sql` | Funzione custom JWT claims |
+| `010_reminders_training.sql` | Promemoria WhatsApp e area allenamento con link sicuro |
+| `011_training_progress_ai.sql` | Note sessione, dashboard progressi e cache AI server-only |
 
 ---
 
