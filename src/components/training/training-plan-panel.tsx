@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Copy, Dumbbell, ExternalLink, Link2, Loader2, Plus, Save, Trash2, Unlink } from 'lucide-react'
+import { BookOpen, Copy, Dumbbell, ExternalLink, Link2, Loader2, Plus, Save, Trash2, Unlink } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui/index'
 
-type Exercise = { id: string; name: string; targetSets: number; targetReps: string; notes: string }
+type ExerciseImage = { path: string; alt: string; url?: string }
+type Exercise = { id: string; name: string; targetSets: number; targetReps: string; notes: string; images: ExerciseImage[] }
+type LibraryExercise = { id: string; name: string; default_sets: number; default_reps: string; notes: string; images: ExerciseImage[] }
 
 export function TrainingPlanPanel({ clientId, locale }: { clientId: string; locale: string }) {
   const [loading, setLoading] = useState(true)
@@ -16,6 +18,8 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
   const [sessions, setSessions] = useState<any[]>([])
   const [access, setAccess] = useState<any>(null)
   const [link, setLink] = useState('')
+  const [library, setLibrary] = useState<LibraryExercise[]>([])
+  const [selectedLibraryId, setSelectedLibraryId] = useState('')
 
   async function load() {
     setLoading(true)
@@ -25,7 +29,7 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
       if (!response.ok) throw new Error(data.error)
       if (data.plan) {
         setTitle(data.plan.title)
-        setExercises(data.plan.exercises)
+        setExercises(data.plan.exercises.map((exercise: Exercise) => ({ ...exercise, images: exercise.images ?? [] })))
       }
       setSessions(data.sessions)
       setAccess(data.access)
@@ -35,12 +39,34 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
 
   useEffect(() => { load() }, [clientId])
 
+  useEffect(() => {
+    fetch('/api/training/exercises', { cache: 'no-store' }).then(async response => {
+      const payload = await response.json()
+      if (response.ok) setLibrary(payload.exercises)
+    })
+  }, [])
+
   function addExercise() {
-    setExercises(value => [...value, { id: crypto.randomUUID(), name: '', targetSets: 3, targetReps: '8-12', notes: '' }])
+    setExercises(value => [...value, { id: crypto.randomUUID(), name: '', targetSets: 3, targetReps: '8-12', notes: '', images: [] }])
   }
 
   function updateExercise(index: number, patch: Partial<Exercise>) {
     setExercises(value => value.map((exercise, i) => i === index ? { ...exercise, ...patch } : exercise))
+  }
+
+  function addFromLibrary() {
+    const source = library.find(item => item.id === selectedLibraryId)
+    if (!source) return
+    if (exercises.some(item => item.id === source.id)) return toast.error('L’esercizio è già presente nella scheda')
+    setExercises(value => [...value, {
+      id: source.id,
+      name: source.name,
+      targetSets: source.default_sets,
+      targetReps: source.default_reps,
+      notes: source.notes,
+      images: source.images ?? [],
+    }])
+    setSelectedLibraryId('')
   }
 
   async function savePlan() {
@@ -80,12 +106,19 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
 
   return <div className="space-y-4">
     <Card>
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="text-base">Scheda assegnata</CardTitle>
-        <Button size="sm" variant="outline" onClick={addExercise}><Plus /> Esercizio</Button>
-      </CardHeader>
+      <CardHeader><CardTitle className="text-base">Scheda assegnata</CardTitle></CardHeader>
       <CardContent className="space-y-4">
         <Input value={title} onChange={event => setTitle(event.target.value)} placeholder="Titolo scheda" />
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+          <select className="h-10 min-w-0 rounded-md border border-input bg-background px-3 text-sm" value={selectedLibraryId}
+            onChange={event => setSelectedLibraryId(event.target.value)}>
+            <option value="">Seleziona dalla libreria esercizi</option>
+            {library.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+          <Button variant="outline" onClick={addFromLibrary} disabled={!selectedLibraryId}><BookOpen />Aggiungi</Button>
+          <Button variant="ghost" onClick={addExercise}><Plus />Libero</Button>
+        </div>
+        {library.length === 0 && <p className="text-xs text-muted-foreground">Crea esercizi con immagini dalla voce “Esercizi” nel menu, oppure aggiungi un esercizio libero.</p>}
         {exercises.map((exercise, index) => <div key={exercise.id} className="border-b border-border pb-4 last:border-0 space-y-3">
           <div className="flex gap-2">
             <Input value={exercise.name} onChange={event => updateExercise(index, { name: event.target.value })} placeholder="Nome esercizio" />
@@ -104,6 +137,12 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
           </div>
           <textarea className="w-full rounded-md border border-input bg-background p-3 text-sm" rows={2} value={exercise.notes}
             onChange={event => updateExercise(index, { notes: event.target.value })} placeholder="Indicazioni tecniche" />
+          {(exercise.images?.length ?? 0) > 0 && <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {exercise.images.map(image => <div key={image.path} className="aspect-square overflow-hidden rounded-md border bg-white">
+              {image.url ? <img src={image.url} alt={image.alt || exercise.name} className="h-full w-full object-contain" />
+                : <div className="h-full grid place-items-center text-[10px] text-muted-foreground">Immagine</div>}
+            </div>)}
+          </div>}
         </div>)}
         {exercises.length === 0 && <div className="py-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-2" />Aggiungi il primo esercizio</div>}
         <div className="flex justify-end"><Button onClick={savePlan} disabled={saving || exercises.length === 0}>

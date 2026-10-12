@@ -156,6 +156,7 @@ Le migrations si trovano in `supabase/migrations/`:
 | `005_jwt_hook.sql` | Funzione custom JWT claims |
 | `010_reminders_training.sql` | Promemoria WhatsApp e area allenamento con link sicuro |
 | `011_training_progress_ai.sql` | Note sessione, dashboard progressi e cache AI server-only |
+| `012_training_exercise_media.sql` | Libreria esercizi professionista e immagini private |
 
 ---
 

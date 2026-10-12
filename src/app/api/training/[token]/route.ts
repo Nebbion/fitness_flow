@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { sessionActionSchema } from '@/lib/training/schemas'
 import { hashTrainingToken, resolveTrainingAccess } from '@/lib/training/access'
+import { withSignedExerciseImages } from '@/lib/training/media'
 
 interface Params { params: Promise<{ token: string }> }
 const responseHeaders = { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }
@@ -24,11 +25,17 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const client = clientResult.data
   const tenant = tenantResult.data
   if (!client?.active || tenant?.status !== 'active') return NextResponse.json({ error: 'Accesso non disponibile' }, { status: 404, headers: responseHeaders })
+  const [plan, openPlanSnapshot] = await Promise.all([
+    withSignedExerciseImages(admin, planResult.data),
+    withSignedExerciseImages(admin, openResult.data?.plan_snapshot),
+  ])
   return NextResponse.json({
     client,
     tenant,
-    plan: planResult.data,
-    openSession: openResult.data,
+    plan,
+    openSession: openResult.data
+      ? { ...openResult.data, plan_snapshot: openPlanSnapshot }
+      : null,
     history: historyResult.data ?? [],
   }, { headers: responseHeaders })
 }
@@ -52,5 +59,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: conflict ? 'La sessione è stata modificata altrove. Ricarica la pagina.' : denied ? 'Link scaduto o revocato' : error.message },
       { status: conflict ? 409 : denied ? 403 : 422, headers: responseHeaders })
   }
-  return NextResponse.json({ session: data }, { headers: responseHeaders })
+  const session = data?.plan_snapshot
+    ? { ...data, plan_snapshot: await withSignedExerciseImages(admin, data.plan_snapshot) }
+    : data
+  return NextResponse.json({ session }, { headers: responseHeaders })
 }
