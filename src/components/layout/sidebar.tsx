@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 import {
   LayoutDashboard, Users, Calendar, Briefcase,
   UserCog, CreditCard, Sparkles, Settings, ChevronLeft,
-  ChevronRight, Activity,
+  ChevronRight, Activity, Dumbbell,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/utils'
@@ -50,6 +50,12 @@ function getNavItems(locale: string): NavItem[] {
       key: 'appointments',
       href: `/${locale}/dashboard/appointments`,
       icon: Calendar,
+      roles: ['TENANT_ADMIN', 'STAFF'],
+    },
+    {
+      key: 'exercises',
+      href: `/${locale}/dashboard/exercises`,
+      icon: Dumbbell,
       roles: ['TENANT_ADMIN', 'STAFF'],
     },
     {

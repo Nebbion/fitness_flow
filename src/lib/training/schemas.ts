@@ -6,6 +6,18 @@ export const exerciseSchema = z.object({
   targetSets: z.number().int().min(1).max(20),
   targetReps: z.string().trim().min(1).max(30),
   notes: z.string().max(500).default(''),
+  images: z.array(z.object({
+    path: z.string().trim().min(1).max(500),
+    alt: z.string().trim().max(160).default(''),
+  })).max(6).default([]),
+})
+
+export const exerciseLibraryInputSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  defaultSets: z.number().int().min(1).max(20).default(3),
+  defaultReps: z.string().trim().min(1).max(30).default('8-12'),
+  notes: z.string().max(500).default(''),
+  images: exerciseSchema.shape.images,
 })
 
 export const trainingPlanSchema = z.object({
