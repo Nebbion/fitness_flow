@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 
 interface PageProps {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; reason?: string }>
 }
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default async function SuperAdminLoginPage({ params, searchParams }: PageProps) {
   const { locale } = await params
-  const { error } = await searchParams
+  const { error, reason } = await searchParams
   const supabase = await createClient() as any
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -63,7 +63,7 @@ export default async function SuperAdminLoginPage({ params, searchParams }: Page
             <LoginForm
               locale={locale}
               redirectTo={`/${locale}/admin`}
-              initialError={error}
+              initialError={reason === 'inactive' ? 'Sessione scaduta dopo 10 minuti di inattività. Accedi nuovamente.' : error}
               requiredRole="SUPER_ADMIN"
               accent="admin"
             />

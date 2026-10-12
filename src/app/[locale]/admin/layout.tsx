@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Activity, LayoutDashboard, Users, CreditCard, LogOut, ShieldCheck } from 'lucide-react'
+import { SessionTimeout } from '@/components/auth/session-timeout'
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -31,6 +32,12 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
       className="flex h-screen overflow-hidden bg-[#f5f6f8] dark:bg-zinc-950"
       style={{ '--primary': '0 72% 51%', '--ring': '0 72% 51%' } as React.CSSProperties}
     >
+      <SessionTimeout
+        userId={user.id}
+        sessionStartedAt={user.last_sign_in_at ?? user.id}
+        loginPath={`/${locale}/superadmin/login`}
+        locale={locale}
+      />
       {/* Sidebar admin */}
       <aside className="w-20 md:w-60 border-r border-zinc-800 bg-zinc-950 text-zinc-100 flex flex-col shrink-0">
         <div className="flex items-center gap-3 h-16 px-4 border-b border-zinc-800">

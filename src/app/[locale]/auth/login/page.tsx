@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 
 interface PageProps {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ redirect?: string; error?: string; reset?: string }>
+  searchParams: Promise<{ redirect?: string; error?: string; reset?: string; reason?: string }>
 }
 
 export async function generateMetadata({
@@ -21,7 +21,7 @@ export async function generateMetadata({
 
 export default async function LoginPage({ params, searchParams }: PageProps) {
   const { locale } = await params
-  const { redirect: redirectTo, error, reset } = await searchParams
+  const { redirect: redirectTo, error, reset, reason } = await searchParams
 
   // Se già autenticato, redirige
   const supabase = await createClient()
@@ -33,7 +33,9 @@ export default async function LoginPage({ params, searchParams }: PageProps) {
   const t = await getTranslations({ locale, namespace: 'auth.login' })
   const initialError = error === 'confirmation_same_browser'
     ? t('confirmationSameBrowser')
-    : error
+    : reason === 'inactive'
+      ? t('sessionExpired')
+      : error
 
   return (
     <div className="space-y-6">

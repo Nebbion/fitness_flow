@@ -74,6 +74,7 @@
       "register": "Registrati gratis",
       "loading": "Accesso in corso...",
       "error": "Credenziali non valide. Riprova.",
+      "sessionExpired": "Sessione scaduta dopo 10 minuti di inattività. Accedi nuovamente.",
       "magicLink": "Accedi con link magico",
       "magicLinkSent": "Ti abbiamo inviato un link di accesso via email",
       "resendConfirmation": "Invia di nuovo il link di conferma",

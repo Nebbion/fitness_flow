@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { Activity, Calendar, Dumbbell, FileText, TrendingUp, LogOut } from 'lucide-react'
+import { SessionTimeout } from '@/components/auth/session-timeout'
 
 interface PortalLayoutProps {
   children: React.ReactNode
@@ -47,6 +48,12 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
 
   return (
     <div className="min-h-screen bg-background">
+      <SessionTimeout
+        userId={user.id}
+        sessionStartedAt={user.last_sign_in_at ?? user.id}
+        loginPath={`/${locale}/auth/login`}
+        locale={locale}
+      />
       {/* Top navigation */}
       <header className="border-b border-border bg-card sticky top-0 z-10 print:hidden">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">

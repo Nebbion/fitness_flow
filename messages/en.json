@@ -74,6 +74,7 @@
       "register": "Sign up for free",
       "loading": "Signing in...",
       "error": "Invalid credentials. Please try again.",
+      "sessionExpired": "Your session expired after 10 minutes of inactivity. Please sign in again.",
       "magicLink": "Sign in with magic link",
       "magicLinkSent": "We've sent you a sign-in link via email",
       "resendConfirmation": "Resend confirmation link",
