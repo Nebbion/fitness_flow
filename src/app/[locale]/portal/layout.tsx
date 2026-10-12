@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
-import { Activity, Calendar, FileText, TrendingUp, LogOut, Globe } from 'lucide-react'
+import { Activity, Calendar, Dumbbell, FileText, TrendingUp, LogOut } from 'lucide-react'
 
 interface PortalLayoutProps {
   children: React.ReactNode
@@ -40,6 +40,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
   const portalNav = [
     { href: `/${locale}/portal`, label: 'Dashboard', icon: Activity, exact: true },
     { href: `/${locale}/portal/appointments`, label: t('appointments'), icon: Calendar },
+    { href: `/${locale}/portal/training`, label: t('training'), icon: Dumbbell },
     { href: `/${locale}/portal/documents`, label: t('documents'), icon: FileText },
     { href: `/${locale}/portal/progress`, label: 'Progressi', icon: TrendingUp },
   ]
@@ -47,7 +48,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
   return (
     <div className="min-h-screen bg-background">
       {/* Top navigation */}
-      <header className="border-b border-border bg-card sticky top-0 z-10">
+      <header className="border-b border-border bg-card sticky top-0 z-10 print:hidden">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo studio */}
           <div className="flex items-center gap-2">
@@ -100,7 +101,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
       </header>
 
       {/* Mobile bottom nav */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card z-10">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card z-10 print:hidden">
         <div className="flex">
           {portalNav.map(item => {
             const Icon = item.icon
@@ -119,7 +120,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
       </nav>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto px-4 py-6 pb-24 sm:pb-6">
+      <main className="max-w-4xl mx-auto px-4 py-6 pb-24 sm:pb-6 print:max-w-none print:p-0">
         {children}
       </main>
     </div>

@@ -24,6 +24,7 @@ export const routing = defineRouting({
     '/dashboard/settings':    '/dashboard/settings',
     '/portal':                '/portal',
     '/portal/appointments':   '/portal/appointments',
+    '/portal/training':       '/portal/training',
     '/portal/plans':          '/portal/plans',
     '/portal/documents':      '/portal/documents',
     '/portal/progress':       '/portal/progress',
