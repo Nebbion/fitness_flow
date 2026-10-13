@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/index'
-import { Calendar, Dumbbell, FileText, TrendingUp } from 'lucide-react'
+import { Calendar, Dumbbell, FileText, TrendingUp, Utensils } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 
 interface PageProps {
@@ -21,7 +21,7 @@ export default async function PortalHomePage({ params }: PageProps) {
   // Recupera il record cliente
   const { data: client } = await supabase
     .from('clients')
-    .select('id, full_name')
+    .select('id, full_name, tenants(profession)')
     .eq('profile_id', user.id)
     .single()
 
@@ -66,6 +66,15 @@ export default async function PortalHomePage({ params }: PageProps) {
   ])
 
   const firstName = client.full_name?.split(' ')[0] ?? ''
+  const tenant = Array.isArray(client.tenants) ? client.tenants[0] : client.tenants
+  const supportsTraining = ['personal_trainer', 'nutritionist'].includes(tenant?.profession ?? '')
+  const quickLinks = [
+    { href: `/${locale}/portal/appointments`, icon: Calendar, label: t('appointments.title'), color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/20' },
+    ...(supportsTraining ? [{ href: `/${locale}/portal/training`, icon: Dumbbell, label: 'La mia scheda', color: 'text-red-600 bg-red-50 dark:bg-red-950/20' }] : []),
+    ...(tenant?.profession === 'nutritionist' ? [{ href: `/${locale}/portal/nutrition`, icon: Utensils, label: 'La mia alimentazione', color: 'text-green-700 bg-green-50 dark:bg-green-950/20' }] : []),
+    { href: `/${locale}/portal/documents`, icon: FileText, label: t('documents.title'), color: 'text-cyan-700 bg-cyan-50 dark:bg-cyan-950/20' },
+    { href: `/${locale}/portal/progress`, icon: TrendingUp, label: t('progress.title'), color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/20' },
+  ]
 
   return (
     <div className="space-y-6">
@@ -134,13 +143,8 @@ export default async function PortalHomePage({ params }: PageProps) {
       </div>
 
       {/* Link rapidi */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { href: `/${locale}/portal/appointments`, icon: Calendar, label: t('appointments.title'), color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/20' },
-          { href: `/${locale}/portal/training`,     icon: Dumbbell, label: 'La mia scheda',          color: 'text-red-600 bg-red-50 dark:bg-red-950/20' },
-          { href: `/${locale}/portal/documents`,    icon: FileText, label: t('documents.title'),    color: 'text-green-600 bg-green-50 dark:bg-green-950/20' },
-          { href: `/${locale}/portal/progress`,     icon: TrendingUp, label: t('progress.title'),   color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/20' },
-        ].map(item => {
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {quickLinks.map(item => {
           const Icon = item.icon
           return (
             <a

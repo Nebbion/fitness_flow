@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 import {
   LayoutDashboard, Users, Calendar, Briefcase,
   UserCog, CreditCard, Sparkles, Settings, ChevronLeft,
-  ChevronRight, Activity, Dumbbell,
+  ChevronRight, Activity, Dumbbell, Utensils,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/utils'
@@ -30,6 +30,7 @@ interface NavItem {
   icon: React.ElementType
   roles: UserRole[]
   badge?: string
+  professions?: string[]
 }
 
 function getNavItems(locale: string): NavItem[] {
@@ -57,6 +58,14 @@ function getNavItems(locale: string): NavItem[] {
       href: `/${locale}/dashboard/exercises`,
       icon: Dumbbell,
       roles: ['TENANT_ADMIN', 'STAFF'],
+      professions: ['personal_trainer', 'nutritionist'],
+    },
+    {
+      key: 'nutrition',
+      href: `/${locale}/dashboard/nutrition`,
+      icon: Utensils,
+      roles: ['TENANT_ADMIN', 'STAFF'],
+      professions: ['nutritionist'],
     },
     {
       key: 'services',
@@ -96,7 +105,9 @@ export function Sidebar({ locale, role, tenant, user }: SidebarProps) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
 
-  const navItems = getNavItems(locale).filter(item => item.roles.includes(role))
+  const navItems = getNavItems(locale).filter(item =>
+    item.roles.includes(role) && (!item.professions || item.professions.includes(tenant?.profession ?? 'other'))
+  )
 
   const isActive = (href: string) => {
     if (href === `/${locale}/dashboard`) {

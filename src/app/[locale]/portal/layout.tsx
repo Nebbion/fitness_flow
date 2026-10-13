@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
-import { Activity, Calendar, Dumbbell, FileText, TrendingUp, LogOut } from 'lucide-react'
+import { Activity, Calendar, Dumbbell, FileText, TrendingUp, LogOut, Utensils } from 'lucide-react'
 import { SessionTimeout } from '@/components/auth/session-timeout'
 
 interface PortalLayoutProps {
@@ -30,7 +30,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
   // Recupera il tenant del cliente (tramite clients)
   const { data: clientRecord } = await supabase
     .from('clients')
-    .select('id, full_name, tenants(name, logo_url, brand_primary)')
+    .select('id, full_name, tenants(name, logo_url, brand_primary, profession)')
     .eq('profile_id', user.id)
     .single()
 
@@ -38,10 +38,12 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
     ? clientRecord.tenants[0]
     : clientRecord?.tenants
 
+  const supportsTraining = ['personal_trainer', 'nutritionist'].includes(tenant?.profession ?? '')
   const portalNav = [
     { href: `/${locale}/portal`, label: 'Dashboard', icon: Activity, exact: true },
     { href: `/${locale}/portal/appointments`, label: t('appointments'), icon: Calendar },
-    { href: `/${locale}/portal/training`, label: t('training'), icon: Dumbbell },
+    ...(supportsTraining ? [{ href: `/${locale}/portal/training`, label: t('training'), icon: Dumbbell }] : []),
+    ...(tenant?.profession === 'nutritionist' ? [{ href: `/${locale}/portal/nutrition`, label: t('nutrition'), icon: Utensils }] : []),
     { href: `/${locale}/portal/documents`, label: t('documents'), icon: FileText },
     { href: `/${locale}/portal/progress`, label: 'Progressi', icon: TrendingUp },
   ]
@@ -73,7 +75,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
           </div>
 
           {/* Nav links */}
-          <nav className="hidden sm:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {portalNav.map(item => {
               const Icon = item.icon
               return (
@@ -108,7 +110,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
       </header>
 
       {/* Mobile bottom nav */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card z-10 print:hidden">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card z-10 print:hidden">
         <div className="flex">
           {portalNav.map(item => {
             const Icon = item.icon
@@ -116,10 +118,10 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex-1 flex flex-col items-center gap-1 py-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="min-w-0 flex-1 flex flex-col items-center gap-1 py-3 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
+                <span className="max-w-full truncate px-0.5">{item.label}</span>
               </Link>
             )
           })}

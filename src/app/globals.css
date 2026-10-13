@@ -78,4 +78,6 @@
 @media print {
   @page { size: A4 portrait; margin: 12mm; }
   html, body { background: white !important; color: black !important; }
+  .nutrition-print { font-size: 10pt; }
+  .nutrition-print table { break-inside: avoid; }
 }

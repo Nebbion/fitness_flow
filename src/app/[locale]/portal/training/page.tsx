@@ -22,8 +22,10 @@ export default async function PortalTrainingPage({ params }: PageProps) {
   const [{ data: plan }, { data: tenant }] = await Promise.all([
     admin.from('training_plans').select('title, exercises, updated_at')
       .eq('client_id', client.id).eq('tenant_id', client.tenant_id).maybeSingle(),
-    admin.from('tenants').select('name, logo_url').eq('id', client.tenant_id).single(),
+    admin.from('tenants').select('name, logo_url, profession').eq('id', client.tenant_id).single(),
   ])
+
+  if (!['personal_trainer', 'nutritionist'].includes(tenant?.profession ?? '')) redirect(`/${locale}/portal`)
 
   const signedPlan = await withSignedExerciseImages(admin, plan)
   return <PortalTrainingPlan plan={signedPlan} tenant={tenant ?? { name: 'FitnessFlow' }} client={client} />
