@@ -2,6 +2,20 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { exerciseLibraryInputSchema, sessionEntriesSchema, trainingPlanSchema } from './schemas.ts'
 
+test('recommended weights preserve zero and decimals and reject invalid loads', () => {
+  for (const weight of [null, 0, 20, 30.5]) {
+    assert.equal(exerciseLibraryInputSchema.parse({ name: 'Squat', defaultWeightKg: weight }).defaultWeightKg, weight)
+  }
+  for (const weight of [-1, 2001]) {
+    assert.equal(exerciseLibraryInputSchema.safeParse({ name: 'Squat', defaultWeightKg: weight }).success, false)
+  }
+})
+
+test('duplicate exercise entries cannot produce ambiguous weight history', () => {
+  const entry = { exerciseId: crypto.randomUUID(), sets: [{ reps: 8, weightKg: 20 }] }
+  assert.equal(sessionEntriesSchema.safeParse([entry, entry]).success, false)
+})
+
 test('training plan requires stable exercise ids and bounded sets', () => {
   assert.equal(trainingPlanSchema.safeParse({
     title: 'Forza A',

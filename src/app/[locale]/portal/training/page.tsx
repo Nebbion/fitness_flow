@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { withSignedExerciseImages } from '@/lib/training/media'
-import { PortalTrainingPlan } from '@/components/training/portal-training-plan'
+import { ClientTrainingApp } from '@/components/training/client-training-app'
 
 interface PageProps { params: Promise<{ locale: string }> }
 
@@ -28,5 +28,5 @@ export default async function PortalTrainingPage({ params }: PageProps) {
   if (!['personal_trainer', 'nutritionist'].includes(tenant?.profession ?? '')) redirect(`/${locale}/portal`)
 
   const signedPlan = await withSignedExerciseImages(admin, plan)
-  return <PortalTrainingPlan plan={signedPlan} tenant={tenant ?? { name: 'FitnessFlow' }} client={client} />
+  return <ClientTrainingApp />
 }

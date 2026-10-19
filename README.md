@@ -158,6 +158,7 @@ Le migrations si trovano in `supabase/migrations/`:
 | `011_training_progress_ai.sql` | Note sessione, dashboard progressi e cache AI server-only |
 | `012_training_exercise_media.sql` | Libreria esercizi professionista e immagini private |
 | `013_nutrition_plans.sql` | Piani alimentari strutturati, calorie e macronutrienti |
+| `014_training_weight_history.sql` | Allenamenti dal portale cliente, storico variazioni carichi e kg consigliati nella libreria |
 
 ---
 

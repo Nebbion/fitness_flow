@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui/index'
 
 type ExerciseImage = { path: string; alt: string; url?: string }
-type Exercise = { id: string; name: string; targetSets: number; targetReps: string; notes: string; images: ExerciseImage[] }
-type LibraryExercise = { id: string; name: string; default_sets: number; default_reps: string; notes: string; images: ExerciseImage[] }
+type Exercise = { id: string; name: string; targetSets: number; targetReps: string; targetWeightKg?: number | null; notes: string; images: ExerciseImage[] }
+type LibraryExercise = { id: string; name: string; default_sets: number; default_reps: string; default_weight_kg?: number | null; notes: string; images: ExerciseImage[] }
 
 export function TrainingPlanPanel({ clientId, locale }: { clientId: string; locale: string }) {
   const [loading, setLoading] = useState(true)
@@ -63,6 +63,7 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
       name: source.name,
       targetSets: source.default_sets,
       targetReps: source.default_reps,
+      targetWeightKg: source.default_weight_kg ?? null,
       notes: source.notes,
       images: source.images ?? [],
     }])
@@ -137,6 +138,10 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
           </div>
           <textarea className="w-full rounded-md border border-input bg-background p-3 text-sm" rows={2} value={exercise.notes}
             onChange={event => updateExercise(index, { notes: event.target.value })} placeholder="Indicazioni tecniche" />
+          <label className="block text-xs text-muted-foreground">Carico consigliato (kg)
+            <Input type="number" min={0} max={2000} step="any" value={exercise.targetWeightKg ?? ''}
+              onChange={event => updateExercise(index, { targetWeightKg: event.target.value === '' ? null : Number(event.target.value) })} />
+          </label>
           {(exercise.images?.length ?? 0) > 0 && <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {exercise.images.map(image => <div key={image.path} className="aspect-square overflow-hidden rounded-md border bg-white">
               {image.url ? <img src={image.url} alt={image.alt || exercise.name} className="h-full w-full object-contain" />

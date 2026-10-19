@@ -12,6 +12,7 @@ type LibraryExercise = {
   name: string
   default_sets: number
   default_reps: string
+  default_weight_kg: number | null
   notes: string
   images: ExerciseImage[]
 }
@@ -20,11 +21,12 @@ type Draft = {
   name: string
   defaultSets: number
   defaultReps: string
+  defaultWeightKg: number | null
   notes: string
   images: ExerciseImage[]
 }
 
-const emptyDraft: Draft = { name: '', defaultSets: 3, defaultReps: '8-12', notes: '', images: [] }
+const emptyDraft: Draft = { name: '', defaultSets: 3, defaultReps: '8-12', defaultWeightKg: null, notes: '', images: [] }
 
 export function ExerciseLibrary() {
   const [exercises, setExercises] = useState<LibraryExercise[]>([])
@@ -61,6 +63,7 @@ export function ExerciseLibrary() {
       name: exercise.name,
       defaultSets: exercise.default_sets,
       defaultReps: exercise.default_reps,
+      defaultWeightKg: exercise.default_weight_kg ?? null,
       notes: exercise.notes,
       images: exercise.images ?? [],
     })
@@ -152,6 +155,10 @@ export function ExerciseLibrary() {
               onChange={event => setDraft(current => ({ ...current, defaultReps: event.target.value }))} />
           </label>
         </div>
+        <label className="block text-xs text-muted-foreground">Carico consigliato (kg)
+          <Input type="number" min={0} max={2000} step="any" value={draft.defaultWeightKg ?? ''}
+            onChange={event => setDraft(current => ({ ...current, defaultWeightKg: event.target.value === '' ? null : Number(event.target.value) }))} />
+        </label>
         <textarea className="w-full rounded-md border border-input bg-background p-3 text-sm" rows={3} maxLength={500}
           value={draft.notes} onChange={event => setDraft(current => ({ ...current, notes: event.target.value }))}
           placeholder="Istruzioni tecniche e accorgimenti" />
@@ -201,6 +208,7 @@ export function ExerciseLibrary() {
             <div className="flex"><Button size="icon" variant="ghost" aria-label="Modifica" onClick={() => edit(exercise)}><Pencil /></Button>
               <Button size="icon" variant="ghost" aria-label="Elimina" onClick={() => remove(exercise)}><Trash2 /></Button></div></div>
             {exercise.notes && <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{exercise.notes}</p>}
+            {exercise.default_weight_kg != null && <p className="mt-2 text-sm font-medium">{exercise.default_weight_kg} kg</p>}
           </div>
         </div>)}
       </div>}

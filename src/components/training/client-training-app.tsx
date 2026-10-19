@@ -9,7 +9,8 @@ import { ExerciseGallery, PrintableTrainingPlan } from './training-plan-presenta
 type SetEntry = { reps: number | null; weightKg: number | null; notes: string }
 type Entry = { exerciseId: string; sets: SetEntry[]; notes: string }
 
-export function ClientTrainingApp({ token }: { token: string }) {
+export function ClientTrainingApp({ token }: { token?: string }) {
+  const endpoint = token ? `/api/training/${token}` : '/api/portal/training'
   const [data, setData] = useState<any>(null)
   const [session, setSession] = useState<any>(null)
   const [entries, setEntries] = useState<Entry[]>([])
@@ -22,7 +23,7 @@ export function ClientTrainingApp({ token }: { token: string }) {
 
   async function load() {
     try {
-      const response = await fetch(`/api/training/${token}`, { cache: 'no-store' })
+      const response = await fetch(endpoint, { cache: 'no-store' })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error)
       setData(payload)
@@ -55,7 +56,7 @@ export function ClientTrainingApp({ token }: { token: string }) {
   async function start() {
     setStatus('loading')
     try {
-      const response = await fetch(`/api/training/${token}`, {
+      const response = await fetch(endpoint, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }),
       })
       const payload = await response.json()
@@ -70,7 +71,7 @@ export function ClientTrainingApp({ token }: { token: string }) {
     saveInFlight.current = true
     setStatus('saving')
     try {
-      const response = await fetch(`/api/training/${token}`, {
+      const response = await fetch(endpoint, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: complete ? 'complete' : 'save', sessionId: session.id, version: session.version, entries, notes: sessionNotes, mutationId: crypto.randomUUID() }),
       })
@@ -85,10 +86,11 @@ export function ClientTrainingApp({ token }: { token: string }) {
   }
 
   useEffect(() => {
+    if (status === 'error' || status === 'saving') return
     if (!session || JSON.stringify({ entries, notes: sessionNotes }) === lastSaved.current) return
     const timer = window.setTimeout(() => save(false), 900)
     return () => window.clearTimeout(timer)
-  }, [entries, sessionNotes, session?.id, session?.version])
+  }, [entries, sessionNotes, session?.id, session?.version, status === 'saving'])
 
   const exercises = session?.plan_snapshot?.exercises ?? data?.plan?.exercises ?? []
   const previous = useMemo(() => data?.history ?? [], [data])
@@ -125,14 +127,14 @@ export function ClientTrainingApp({ token }: { token: string }) {
     </header>
 
     <div className="mx-auto max-w-2xl p-4 space-y-4">
-      <div className="grid grid-cols-2 overflow-hidden rounded-md border border-border bg-background">
+      {token && <div className="grid grid-cols-2 overflow-hidden rounded-md border border-border bg-background">
         <button type="button" onClick={() => setView('training')} className={`h-11 flex items-center justify-center gap-2 text-sm ${view === 'training' ? 'text-white font-medium' : 'text-muted-foreground'}`}
           style={view === 'training' ? { background: brand } : undefined}><Dumbbell className="h-4 w-4" />Allenamento</button>
         <button type="button" onClick={() => setView('progress')} className={`h-11 flex items-center justify-center gap-2 border-l border-border text-sm ${view === 'progress' ? 'text-white font-medium' : 'text-muted-foreground'}`}
           style={view === 'progress' ? { background: brand } : undefined}><BarChart3 className="h-4 w-4" />I miei progressi</button>
-      </div>
+      </div>}
 
-      {view === 'progress' ? <ClientProgressDashboard token={token} brand={brand} /> : <>
+      {view === 'progress' && token ? <ClientProgressDashboard token={token} brand={brand} /> : <>
       <div className="flex items-start justify-between gap-3"><div><h1 className="text-xl font-semibold">{printableTitle}</h1>
         <p className="text-sm text-muted-foreground mt-1">{session ? `Sessione iniziata ${new Date(session.started_at).toLocaleString('it-IT')}` : 'La tua scheda è pronta.'}</p></div>
         {(session || data.plan) && <Button size="icon" variant="outline" aria-label="Stampa scheda" title="Stampa scheda" onClick={() => window.print()}><Printer /></Button>}
@@ -145,6 +147,7 @@ export function ClientTrainingApp({ token }: { token: string }) {
           <div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold">{exercise.name}</h2>
             <p className="text-sm text-muted-foreground">{exercise.targetSets} serie · {exercise.targetReps} ripetizioni</p></div></div>
           {exercise.notes && <p className="mt-2 text-sm">{exercise.notes}</p>}
+          {exercise.targetWeightKg != null && <p className="mt-2 text-sm">Carico consigliato: {exercise.targetWeightKg} kg</p>}
           <ExerciseGallery images={exercise.images} name={exercise.name} />
         </section>)}
       </div>}
@@ -157,6 +160,7 @@ export function ClientTrainingApp({ token }: { token: string }) {
           <div className="p-4 border-b border-border"><h2 className="font-semibold">{exercise.name}</h2>
             <p className="text-sm text-muted-foreground">{exercise.targetSets} serie · {exercise.targetReps} ripetizioni</p>
             {exercise.notes && <p className="text-sm mt-2">{exercise.notes}</p>}
+            {exercise.targetWeightKg != null && <p className="mt-2 text-sm">Carico consigliato: {exercise.targetWeightKg} kg</p>}
             <ExerciseGallery images={exercise.images} name={exercise.name} /></div>
           <div className="p-3 space-y-3">
             {entry.sets.map((set, setIndex) => <div key={setIndex} className="grid grid-cols-[2rem_1fr_1fr] gap-2 items-end">
@@ -172,6 +176,12 @@ export function ClientTrainingApp({ token }: { token: string }) {
               {old?.sets?.[setIndex] && <p className="col-start-2 col-span-2 text-xs text-muted-foreground">
                 Precedente: {old.sets[setIndex].reps ?? '-'} rip. · {old.sets[setIndex].weightKg ?? '-'} kg
               </p>}
+              <div className="col-start-2 col-span-2 flex flex-wrap items-center gap-2" aria-label="Storico carichi">
+                {(session.weight_history ?? []).filter((change: any) => change.exerciseId === exercise.id && change.setIndex === setIndex)
+                  .map((change: any, index: number) => change.previousKg !== null && change.previousKg !== undefined
+                    ? <span key={index} className="text-xs text-muted-foreground" title={new Date(change.recordedAt).toLocaleString('it-IT')}>{change.previousKg} kg</span> : null)}
+                {set.weightKg !== null && <strong className="rounded border border-primary/30 bg-primary/10 px-2 py-1 text-sm text-primary">{set.weightKg} kg</strong>}
+              </div>
               <input className="col-start-2 col-span-2 h-9 rounded-md border border-input bg-background px-3 text-sm" value={set.notes} maxLength={300}
                 placeholder="Nota serie" onChange={event => changeSet(exerciseIndex, setIndex, 'notes', event.target.value)} />
             </div>)}
@@ -185,13 +195,23 @@ export function ClientTrainingApp({ token }: { token: string }) {
         value={sessionNotes} onChange={event => setSessionNotes(event.target.value)} maxLength={2000} />}
 
       {data.history?.length > 0 && <section className="pt-3"><h2 className="font-semibold mb-2">Sessioni precedenti</h2>
-        <div className="divide-y divide-border rounded-md border bg-background">{data.history.slice(0, 5).map((item: any) => <div key={item.id} className="p-3 flex justify-between gap-3 text-sm">
-          <span>{item.plan_snapshot?.title ?? 'Allenamento'}</span><span className="text-muted-foreground">{new Date(item.completed_at).toLocaleDateString('it-IT')}</span>
-        </div>)}</div></section>}
+        <div className="divide-y divide-border rounded-md border bg-background">{data.history.map((item: any) => <details key={item.id} className="p-3 text-sm">
+          <summary className="cursor-pointer">{item.plan_snapshot?.title ?? 'Allenamento'} · {new Date(item.completed_at).toLocaleDateString('it-IT')}</summary>
+          {(item.entries ?? []).map((entry: Entry) => <div key={entry.exerciseId} className="mt-3">
+            <p className="font-medium">{item.plan_snapshot?.exercises?.find((exercise: any) => exercise.id === entry.exerciseId)?.name ?? 'Esercizio'}</p>
+            {entry.sets.map((set, index) => <div key={index} className="flex flex-wrap gap-2 py-1">
+              <span>Serie {index + 1} · {set.reps ?? '—'} rip.</span>
+              {(item.weight_history ?? []).filter((change: any) => change.exerciseId === entry.exerciseId && change.setIndex === index && change.previousKg != null)
+                .map((change: any, i: number) => <span key={i} className="text-muted-foreground">{change.previousKg} kg</span>)}
+              {set.weightKg !== null && <strong className="text-primary">{set.weightKg} kg</strong>}
+              {set.notes && <span>{set.notes}</span>}
+            </div>)}
+          </div>)}
+        </details>)}</div></section>}
       </>}
     </div>
 
-    {view === 'training' && session && !session.completed_at && <div className="fixed bottom-0 inset-x-0 border-t border-border bg-background/95 backdrop-blur p-3">
+    {view === 'training' && session && !session.completed_at && <div className={`${token ? 'bottom-0' : 'bottom-16 lg:bottom-0'} fixed inset-x-0 z-20 border-t border-border bg-background/95 backdrop-blur p-3`}>
       <div className="mx-auto max-w-2xl grid grid-cols-2 gap-3">
         <Button variant="outline" className="h-12" onClick={() => save(false)} disabled={status === 'saving'}><Save />Salva</Button>
         <Button className="h-12" onClick={() => save(true)} disabled={status === 'saving'} style={{ background: brand }}><CheckCircle2 />Completa</Button>

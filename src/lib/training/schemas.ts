@@ -5,6 +5,7 @@ export const exerciseSchema = z.object({
   name: z.string().trim().min(1).max(120),
   targetSets: z.number().int().min(1).max(20),
   targetReps: z.string().trim().min(1).max(30),
+  targetWeightKg: z.number().min(0).max(2000).nullable().default(null),
   notes: z.string().max(500).default(''),
   images: z.array(z.object({
     path: z.string().trim().min(1).max(500),
@@ -16,6 +17,7 @@ export const exerciseLibraryInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
   defaultSets: z.number().int().min(1).max(20).default(3),
   defaultReps: z.string().trim().min(1).max(30).default('8-12'),
+  defaultWeightKg: z.number().min(0).max(2000).nullable().default(null),
   notes: z.string().max(500).default(''),
   images: exerciseSchema.shape.images,
 })
@@ -35,7 +37,8 @@ export const sessionEntriesSchema = z.array(z.object({
   exerciseId: z.string().uuid(),
   sets: z.array(setEntrySchema).min(1).max(30),
   notes: z.string().max(1000).default(''),
-})).max(60)
+})).max(60).refine(entries => new Set(entries.map(entry => entry.exerciseId)).size === entries.length,
+  'Ogni esercizio deve comparire una sola volta')
 
 export const sessionActionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('start') }),

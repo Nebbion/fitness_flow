@@ -34,6 +34,7 @@ export function PrintableTrainingPlan({
           <h2 className="mt-1 text-lg font-bold">{exercise.name}</h2></div>
           <p className="text-sm"><strong>{exercise.targetSets}</strong> serie · <strong>{exercise.targetReps}</strong> ripetizioni</p></div>
         {exercise.notes && <p className="mt-2 text-sm">{exercise.notes}</p>}
+        {exercise.targetWeightKg != null && <p className="mt-2 text-sm">Carico consigliato: {exercise.targetWeightKg} kg</p>}
         <ExerciseGallery images={exercise.images} name={exercise.name} printable />
         <table className="mt-3 w-full border-collapse text-xs"><thead><tr>
           <th className="border border-zinc-400 p-1 text-left">Serie</th><th className="border border-zinc-400 p-1 text-left">Ripetizioni</th>

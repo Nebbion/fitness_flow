@@ -19,6 +19,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     name: parsed.data.name,
     default_sets: parsed.data.defaultSets,
     default_reps: parsed.data.defaultReps,
+    default_weight_kg: parsed.data.defaultWeightKg,
     notes: parsed.data.notes,
     images: parsed.data.images,
     updated_at: new Date().toISOString(),
