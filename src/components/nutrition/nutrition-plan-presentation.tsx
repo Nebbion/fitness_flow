@@ -1,4 +1,5 @@
 import type { NutritionDay } from '@/lib/nutrition/schemas'
+import { ChevronDown } from 'lucide-react'
 import { calculatePlanAverage, sumNutritionFoods, sumNutritionMeals, type NutritionTotals } from '@/lib/nutrition/calculations'
 
 export interface NutritionPlanDisplay {
@@ -56,17 +57,17 @@ export function NutritionPlanContent({ plan, tenant, client }: {
 
     {plan.days.map(day => {
       const dayTotals = sumNutritionMeals(day.meals)
-      return <section key={day.id} className="break-inside-avoid-page">
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-2 border-b pb-2">
-          <h2 className="text-lg font-semibold">{day.label}</h2>
+      return <details open key={day.id} className="nutrition-day border-y border-border">
+        <summary className="nutrition-day-heading flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
+          <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold"><ChevronDown className="nutrition-chevron h-4 w-4 shrink-0 print:hidden" /><span className="break-words">{day.label}</span></h2>
           <NutritionTotalsLine totals={dayTotals} compact />
-        </div>
-        <div className="space-y-5">
-          {day.meals.map(meal => <div key={meal.id} className="break-inside-avoid-page">
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="font-medium">{meal.name}{meal.time ? <span className="ml-2 text-xs font-normal text-muted-foreground">{meal.time}</span> : null}</h3>
+        </summary>
+        <div className="space-y-5 p-3 sm:p-5">
+          {day.meals.map(meal => <details open key={meal.id} className="nutrition-meal break-inside-avoid-page border-l-4 pl-3">
+            <summary className="nutrition-meal-heading flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 p-3 [&::-webkit-details-marker]:hidden">
+              <h3 className="flex items-center gap-2 font-medium"><ChevronDown className="nutrition-chevron h-4 w-4 shrink-0 print:hidden" /><span className="break-words">{meal.name}{meal.time ? <span className="ml-2 text-xs font-normal text-muted-foreground">{meal.time}</span> : null}</span></h3>
               <NutritionTotalsLine totals={sumNutritionFoods(meal.foods)} compact />
-            </div>
+            </summary>
             {meal.foods.length > 0 && <div className="mt-2 overflow-hidden rounded border">
               <table className="w-full text-left text-xs">
                 <thead className="bg-muted"><tr><th className="px-3 py-2">Alimento</th><th className="px-3 py-2">Quantità</th><th className="px-3 py-2 text-right">kcal</th><th className="hidden px-3 py-2 text-right sm:table-cell">P / C / G</th></tr></thead>
@@ -80,9 +81,9 @@ export function NutritionPlanContent({ plan, tenant, client }: {
             </div>}
             {meal.notes && <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">{meal.notes}</p>}
             {meal.alternatives && <p className="mt-2 whitespace-pre-wrap border-l-2 border-primary pl-3 text-xs leading-5"><strong>Alternative:</strong> {meal.alternatives}</p>}
-          </div>)}
+          </details>)}
         </div>
-      </section>
+      </details>
     })}
   </article>
 }

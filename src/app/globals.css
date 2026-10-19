@@ -81,3 +81,19 @@
   .nutrition-print { font-size: 10pt; }
   .nutrition-print table { break-inside: avoid; }
 }
+
+.nutrition-day-heading { background: #eff6ff; color: #1e40af; }
+.nutrition-meal { border-left-color: #6ee7b7; }
+.nutrition-meal-heading { background: #ecfdf5; color: #065f46; }
+.nutrition-meal:nth-child(3n + 2) { border-left-color: #fda4af; }
+.nutrition-meal:nth-child(3n + 2) > .nutrition-meal-heading { background: #fff1f2; color: #9f1239; }
+.nutrition-meal:nth-child(3n) { border-left-color: #67e8f9; }
+.nutrition-meal:nth-child(3n) > .nutrition-meal-heading { background: #ecfeff; color: #155e75; }
+details[open] > summary .nutrition-chevron { transform: rotate(180deg); }
+.dark .nutrition-day-heading { background: #172554; color: #bfdbfe; }
+.dark .nutrition-meal-heading { background: #022c22; color: #a7f3d0; }
+.dark .nutrition-meal:nth-child(3n + 2) > .nutrition-meal-heading { background: #4c0519; color: #fecdd3; }
+.dark .nutrition-meal:nth-child(3n) > .nutrition-meal-heading { background: #083344; color: #a5f3fc; }
+@media print {
+  .nutrition-day-heading, .nutrition-meal-heading { background: white !important; color: black !important; }
+}

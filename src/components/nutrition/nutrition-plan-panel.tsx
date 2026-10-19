@@ -33,6 +33,7 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
   const [days, setDays] = useState<NutritionDay[]>([])
   const [hasSavedPlan, setHasSavedPlan] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [collapsedMeals, setCollapsedMeals] = useState<Record<string, boolean>>({})
 
   async function load() {
     setLoading(true)
@@ -113,15 +114,25 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
         </CardContent>
       </Card>
 
-      {days.map((day, dayIndex) => <Card key={day.id}>
-        <CardHeader className="flex-row items-center gap-2 py-4">
+      {days.map((day, dayIndex) => <section key={day.id} className="border-y border-border">
+        <CardHeader className="nutrition-day-heading flex-row flex-wrap items-center gap-2 py-4">
+          <span className="text-xs font-semibold uppercase">Giorno {dayIndex + 1}</span>
           <Input className="max-w-sm font-medium" value={day.label} onChange={event => updateDay(dayIndex, { label: event.target.value })} aria-label="Nome giorno" />
-          <div className="ml-auto flex items-center gap-1"><NutritionTotalsLine totals={sumNutritionMeals(day.meals)} compact />
-            <Button size="icon" variant="ghost" aria-label={collapsed[day.id] ? 'Espandi giorno' : 'Comprimi giorno'} onClick={() => setCollapsed(value => ({ ...value, [day.id]: !value[day.id] }))}>{collapsed[day.id] ? <ChevronDown /> : <ChevronUp />}</Button>
+          <div className="flex flex-wrap items-center gap-1 sm:ml-auto"><NutritionTotalsLine totals={sumNutritionMeals(day.meals)} compact />
+            <Button size="icon" variant="ghost" aria-expanded={!collapsed[day.id]} aria-controls={`day-${day.id}`} title={collapsed[day.id] ? 'Espandi giorno' : 'Comprimi giorno'} aria-label={collapsed[day.id] ? 'Espandi giorno' : 'Comprimi giorno'} onClick={() => setCollapsed(value => ({ ...value, [day.id]: !value[day.id] }))}>{collapsed[day.id] ? <ChevronDown /> : <ChevronUp />}</Button>
             <Button size="icon" variant="ghost" aria-label="Elimina giorno" disabled={days.length === 1} onClick={() => setDays(value => value.filter(item => item.id !== day.id))}><Trash2 /></Button></div>
         </CardHeader>
-        {!collapsed[day.id] && <CardContent className="space-y-5">
-          {day.meals.map((meal, mealIndex) => <section key={meal.id} className="border-t pt-4 first:border-t-0 first:pt-0">
+        <CardContent id={`day-${day.id}`} hidden={!!collapsed[day.id]} className="space-y-5 pt-5">
+          {day.meals.map((meal, mealIndex) => <section key={meal.id} className="nutrition-meal border-l-4 pl-3 sm:pl-4">
+            <div className="nutrition-meal-heading mb-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+              <button type="button" className="flex min-h-10 min-w-0 items-center gap-2 text-left text-sm font-semibold" aria-expanded={!collapsedMeals[meal.id]} aria-controls={`meal-${meal.id}`}
+                onClick={() => setCollapsedMeals(value => ({ ...value, [meal.id]: !value[meal.id] }))}>
+                {collapsedMeals[meal.id] ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronUp className="h-4 w-4 shrink-0" />}
+                <span className="break-words">Pasto {mealIndex + 1} · {meal.name || 'Nuovo pasto'}</span>
+              </button>
+              <NutritionTotalsLine totals={sumNutritionFoods(meal.foods)} compact />
+            </div>
+            <div id={`meal-${meal.id}`} hidden={!!collapsedMeals[meal.id]}>
             <div className="grid gap-2 sm:grid-cols-[1fr_8rem_auto]">
               <Input value={meal.name} onChange={event => updateMeal(dayIndex, mealIndex, { name: event.target.value })} placeholder="Nome pasto" />
               <Input value={meal.time} onChange={event => updateMeal(dayIndex, mealIndex, { time: event.target.value })} placeholder="Orario" />
@@ -129,7 +140,7 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
             </div>
 
             <div className="mt-3 space-y-2">
-              {meal.foods.map((food, foodIndex) => <div key={food.id} className="grid grid-cols-2 gap-2 rounded-md border p-3 md:grid-cols-[minmax(10rem,2fr)_8rem_repeat(4,5rem)_2.5rem]">
+              {meal.foods.map((food, foodIndex) => <div key={food.id} className="grid grid-cols-2 gap-2 rounded-md border bg-background p-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_repeat(4,minmax(0,1fr))_2.5rem]">
                 <Input className="col-span-2 md:col-span-1" value={food.name} onChange={event => updateFood(dayIndex, mealIndex, foodIndex, { name: event.target.value })} placeholder="Alimento" />
                 <Input value={food.quantity} onChange={event => updateFood(dayIndex, mealIndex, foodIndex, { quantity: event.target.value })} placeholder="Quantità" />
                 {(['calories', 'proteinG', 'carbsG', 'fatG'] as const).map((key, index) => <Input key={key} type="number" min={0} max={10000} value={food[key] ?? ''} onChange={event => updateFood(dayIndex, mealIndex, foodIndex, { [key]: nullableNumber(event.target.value) })} placeholder={['kcal', 'P g', 'C g', 'G g'][index]} aria-label={['Calorie', 'Proteine', 'Carboidrati', 'Grassi'][index]} />)}
@@ -143,10 +154,11 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
               <textarea className="rounded-md border border-input bg-background p-3 text-sm" rows={2} value={meal.notes} onChange={event => updateMeal(dayIndex, mealIndex, { notes: event.target.value })} placeholder="Preparazione e note del pasto" />
               <textarea className="rounded-md border border-input bg-background p-3 text-sm" rows={2} value={meal.alternatives} onChange={event => updateMeal(dayIndex, mealIndex, { alternatives: event.target.value })} placeholder="Alternative (non incluse nei totali)" />
             </div>
+            </div>
           </section>)}
           <Button variant="outline" onClick={() => updateDay(dayIndex, { meals: [...day.meals, newMeal('Nuovo pasto')] })}><Plus />Pasto</Button>
-        </CardContent>}
-      </Card>)}
+        </CardContent>
+      </section>)}
 
       <div className="flex flex-wrap justify-between gap-3">
         <Button variant="outline" onClick={() => setDays(value => [...value, newDay(`Giorno ${value.length + 1}`)])}><Plus />Giorno</Button>
