@@ -2,6 +2,28 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { calculatePlanAverage, sumNutritionFoods, sumNutritionMeals } from './calculations.ts'
 import type { NutritionDay, NutritionFood, NutritionMeal } from './schemas.ts'
+import { nutritionPlanSchema, measurementsSchema } from './schemas.ts'
+
+test('nutrition periods accept open ends and reject reversed or impossible dates', () => {
+  const plan = { title: 'Piano', targetCalories: null, days: [{ id: crypto.randomUUID(), label: 'Giorno', meals: [meal([])] }] }
+  assert.equal(nutritionPlanSchema.safeParse({ ...plan, startsOn: '2026-10-19', endsOn: null }).success, true)
+  assert.equal(nutritionPlanSchema.safeParse({ ...plan, startsOn: '2026-10-19', endsOn: '2026-10-18' }).success, false)
+  assert.equal(nutritionPlanSchema.safeParse({ ...plan, endsOn: '2026-10-19' }).success, false)
+  assert.equal(nutritionPlanSchema.safeParse({ ...plan, startsOn: '2026-02-30' }).success, false)
+  assert.equal(nutritionPlanSchema.parse(plan).initialMeasurements.weightKg, null)
+})
+
+test('initial and final BIA measurements remain independent with explicit bounds', () => {
+  const plan = nutritionPlanSchema.parse({ title: 'Piano', targetCalories: null,
+    days: [{ id: crypto.randomUUID(), label: 'Giorno', meals: [meal([])] }],
+    initialMeasurements: { weightKg: 80, phaseAngle: 6.2 }, finalMeasurements: { weightKg: 78 },
+  })
+  assert.equal(plan.initialMeasurements.weightKg, 80)
+  assert.equal(plan.finalMeasurements.weightKg, 78)
+  assert.equal(plan.finalMeasurements.phaseAngle, null)
+  assert.equal(measurementsSchema.safeParse({ bodyFatPercent: 101 }).success, false)
+  assert.equal(measurementsSchema.safeParse({ resistanceOhm: -1 }).success, false)
+})
 
 const food = (patch: Partial<NutritionFood>): NutritionFood => ({
   id: crypto.randomUUID(), name: 'Alimento', quantity: '', calories: null,

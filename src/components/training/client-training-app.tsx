@@ -13,6 +13,7 @@ export function ClientTrainingApp({ token }: { token?: string }) {
   const endpoint = token ? `/api/training/${token}` : '/api/portal/training'
   const [data, setData] = useState<any>(null)
   const [session, setSession] = useState<any>(null)
+  const [selectedPlanId, setSelectedPlanId] = useState('')
   const [entries, setEntries] = useState<Entry[]>([])
   const [sessionNotes, setSessionNotes] = useState('')
   const [view, setView] = useState<'training' | 'progress'>('training')
@@ -27,6 +28,7 @@ export function ClientTrainingApp({ token }: { token?: string }) {
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error)
       setData(payload)
+      setSelectedPlanId(current => payload.plans?.some((plan: any) => plan.id === current) ? current : payload.plan?.id ?? '')
       if (payload.openSession) useSession(payload.openSession)
       else {
         setSession(null)
@@ -57,7 +59,7 @@ export function ClientTrainingApp({ token }: { token?: string }) {
     setStatus('loading')
     try {
       const response = await fetch(endpoint, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start', planId: selectedPlanId || undefined }),
       })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error)
@@ -92,7 +94,8 @@ export function ClientTrainingApp({ token }: { token?: string }) {
     return () => window.clearTimeout(timer)
   }, [entries, sessionNotes, session?.id, session?.version, status === 'saving'])
 
-  const exercises = session?.plan_snapshot?.exercises ?? data?.plan?.exercises ?? []
+  const selectedPlan = data?.plans?.find((plan: any) => plan.id === selectedPlanId) ?? data?.plan
+  const exercises = session?.plan_snapshot?.exercises ?? selectedPlan?.exercises ?? []
   const previous = useMemo(() => data?.history ?? [], [data])
 
   function changeSet(exerciseIndex: number, setIndex: number, field: keyof SetEntry, value: string) {
@@ -109,7 +112,7 @@ export function ClientTrainingApp({ token }: { token?: string }) {
   if (!data) return <main className="min-h-screen grid place-items-center p-6 bg-background"><div className="max-w-sm text-center"><h1 className="text-xl font-semibold">Accesso non disponibile</h1><p className="mt-2 text-sm text-muted-foreground">{error || 'Il link è scaduto o è stato revocato.'}</p></div></main>
 
   const brand = data.tenant.brand_primary || '#2563EB'
-  const printableTitle = session?.plan_snapshot?.title ?? data.plan?.title ?? 'Scheda allenamento'
+  const printableTitle = session?.plan_snapshot?.title ?? selectedPlan?.title ?? 'Scheda allenamento'
   return <>
   <PrintableTrainingPlan tenant={data.tenant} client={data.client} exercises={exercises} title={printableTitle} />
   <main className="min-h-screen bg-muted/30 pb-28 print:hidden" style={{ '--brand': brand } as any}>
@@ -140,7 +143,13 @@ export function ClientTrainingApp({ token }: { token?: string }) {
         {(session || data.plan) && <Button size="icon" variant="outline" aria-label="Stampa scheda" title="Stampa scheda" onClick={() => window.print()}><Printer /></Button>}
       </div>
       {!data.plan && !session && <div className="rounded-md border bg-background p-5 text-sm">Il professionista non ha ancora assegnato una scheda.</div>}
-      {!session && data.plan && <Button className="w-full h-12" onClick={start} style={{ background: brand }}><Play />Inizia allenamento</Button>}
+      {!session && data.plans?.length > 0 && <label className="block text-sm font-medium">Scheda allenamento
+        <select className="mt-2 h-12 w-full rounded-md border bg-background px-3" value={selectedPlanId} disabled={status === 'loading'} onChange={event => setSelectedPlanId(event.target.value)}>
+          {data.plans.map((plan: any) => <option key={plan.id} value={plan.id}>{plan.title}</option>)}
+        </select>
+      </label>}
+      {status === 'error' && !session && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {!session && data.plan && <Button className="w-full h-12" onClick={start} disabled={status === 'loading'} style={{ background: brand }}><Play />Inizia allenamento</Button>}
 
       {!session && data.plan && <div className="space-y-3">
         {exercises.map((exercise: any) => <section key={exercise.id} className="overflow-hidden rounded-md border border-border bg-background p-4">

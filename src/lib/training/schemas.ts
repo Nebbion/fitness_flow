@@ -25,6 +25,8 @@ export const exerciseLibraryInputSchema = z.object({
 })
 
 export const trainingPlanSchema = z.object({
+  id: z.string().uuid().optional(),
+  version: z.number().int().positive().optional(),
   title: z.string().trim().min(2).max(120),
   exercises: z.array(exerciseSchema).min(1).max(60),
 })
@@ -43,7 +45,7 @@ export const sessionEntriesSchema = z.array(z.object({
   'Ogni esercizio deve comparire una sola volta')
 
 export const sessionActionSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('start') }),
+  z.object({ action: z.literal('start'), planId: z.string().uuid().optional() }),
   z.object({
     action: z.enum(['save', 'complete']),
     sessionId: z.string().uuid(),

@@ -26,11 +26,12 @@ export async function GET() {
   const { client, tenant, admin } = ctx
   const scoped = (table: string) => admin.from(table).select('*').eq('client_id', client.id).eq('tenant_id', client.tenant_id)
   const [plan, open, history] = await Promise.all([
-    scoped('training_plans').maybeSingle(), scoped('training_sessions').is('completed_at', null).maybeSingle(),
+    scoped('training_plans').order('updated_at', { ascending: false }), scoped('training_sessions').is('completed_at', null).maybeSingle(),
     scoped('training_sessions').not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(100),
   ])
   if ([plan, open, history].some(result => result.error)) return NextResponse.json({ error: 'Impossibile caricare gli allenamenti' }, { status: 500, headers })
-  return NextResponse.json({ client, tenant, plan: await withSignedExerciseImages(admin, plan.data),
+  const plans = await Promise.all((plan.data ?? []).map((item: any) => withSignedExerciseImages(admin, item)))
+  return NextResponse.json({ client, tenant, plans, plan: plans[0] ?? null,
     openSession: open.data ? { ...open.data, plan_snapshot: await withSignedExerciseImages(admin, open.data.plan_snapshot) } : null,
     history: history.data ?? [],
   }, { headers })
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: 'Dati sessione non validi' }, { status: 422, headers })
   const action = parsed.data
   const { data, error } = await ctx.admin.rpc('portal_training_session_write', {
-    p_user: ctx.user.id, p_action: action.action,
+    p_user: ctx.user.id, p_action: action.action, p_plan_id: action.action === 'start' ? action.planId ?? null : null,
     ...(action.action === 'start' ? {} : { p_id: action.sessionId, p_version: action.version,
       p_entries: action.entries, p_mutation: action.mutationId, p_notes: action.notes }),
   })

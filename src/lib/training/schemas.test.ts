@@ -1,6 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { exerciseLibraryInputSchema, sessionEntriesSchema, trainingPlanSchema } from './schemas.ts'
+import { exerciseLibraryInputSchema, sessionActionSchema, sessionEntriesSchema, trainingPlanSchema } from './schemas.ts'
+
+test('session start preserves the selected plan identifier and rejects malformed ids', () => {
+  const planId = crypto.randomUUID()
+  assert.equal(sessionActionSchema.parse({ action: 'start', planId }).action, 'start')
+  assert.deepEqual(sessionActionSchema.parse({ action: 'start', planId }), { action: 'start', planId })
+  assert.equal(sessionActionSchema.safeParse({ action: 'start', planId: 'foreign-or-invalid' }).success, false)
+})
 
 test('isometry is optional for existing plans and retained when assigned', () => {
   const exercise = { id: crypto.randomUUID(), name: 'Plank', targetSets: 3, targetReps: '1' }

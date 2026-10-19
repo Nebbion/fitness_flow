@@ -17,12 +17,13 @@ export default async function PortalNutritionPage({ params }: PageProps) {
   if (!client) redirect(`/${locale}/auth/login`)
 
   const admin = createAdminClient() as any
-  const [{ data: tenant }, { data: plan }] = await Promise.all([
+  const [{ data: tenant }, plansResult] = await Promise.all([
     admin.from('tenants').select('name, logo_url, profession').eq('id', client.tenant_id).single(),
-    admin.from('nutrition_plans').select('title, objective, guidelines, target_calories, days, updated_at')
-      .eq('client_id', client.id).eq('tenant_id', client.tenant_id).maybeSingle(),
+    admin.from('nutrition_plans').select('id, title, objective, guidelines, target_calories, days, updated_at, starts_on, ends_on, initial_measurements, final_measurements')
+      .eq('client_id', client.id).eq('tenant_id', client.tenant_id).order('created_at', { ascending: false }),
   ])
   if (tenant?.profession !== 'nutritionist') redirect(`/${locale}/portal`)
 
-  return <PortalNutritionPlan plan={plan} tenant={tenant ?? { name: 'FitnessFlow' }} client={client} />
+  if (plansResult.error) throw new Error('Impossibile caricare i piani alimentari')
+  return <PortalNutritionPlan plans={plansResult.data ?? []} tenant={tenant ?? { name: 'FitnessFlow' }} client={client} />
 }

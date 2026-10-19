@@ -1,8 +1,15 @@
 import type { NutritionDay } from '@/lib/nutrition/schemas'
+import type { PlanMeasurements } from '@/lib/nutrition/schemas'
+import { PlanMeasurementsComparison } from './plan-measurements'
 import { ChevronDown } from 'lucide-react'
 import { calculatePlanAverage, sumNutritionFoods, sumNutritionMeals, type NutritionTotals } from '@/lib/nutrition/calculations'
 
 export interface NutritionPlanDisplay {
+  id?: string
+  starts_on?: string | null
+  ends_on?: string | null
+  initial_measurements?: Partial<PlanMeasurements>
+  final_measurements?: Partial<PlanMeasurements>
   title: string
   objective?: string
   guidelines?: string
@@ -39,6 +46,7 @@ export function NutritionPlanContent({ plan, tenant, client }: {
         <p className="text-sm text-muted-foreground">{tenant.name}</p>
         <h1 className="mt-1 text-2xl font-semibold">{plan.title}</h1>
         <p className="mt-1 text-sm">Piano alimentare di {client.full_name}</p>
+        <p className="mt-1 text-sm">Periodo: {plan.starts_on ?? 'Inizio non indicato'} / {plan.ends_on ?? 'Fine non indicata'}</p>
       </div>
       {tenant.logo_url && <img src={tenant.logo_url} alt="" className="h-14 w-14 object-contain" />}
     </header>
@@ -54,6 +62,7 @@ export function NutritionPlanContent({ plan, tenant, client }: {
         {target !== null && <div className="text-right"><p className="text-xs text-muted-foreground">Obiettivo energetico</p><p className="font-semibold">{target} kcal/giorno</p></div>}
       </div>
     </section>
+    <PlanMeasurementsComparison initial={plan.initial_measurements} final={plan.final_measurements} />
 
     {plan.days.map(day => {
       const dayTotals = sumNutritionMeals(day.meals)

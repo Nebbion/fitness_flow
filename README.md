@@ -160,6 +160,7 @@ Le migrations si trovano in `supabase/migrations/`:
 | `013_nutrition_plans.sql` | Piani alimentari strutturati, calorie e macronutrienti |
 | `014_training_weight_history.sql` | Allenamenti dal portale cliente, storico variazioni carichi e kg consigliati nella libreria |
 | `015_training_isometry.sql` | Tempo facoltativo di isometria nella libreria esercizi |
+| `016_multiple_client_plans.sql` | Schede multiple, storico piani alimentari, periodo e rilevazioni BIA iniziali/finali |
 
 ---
 

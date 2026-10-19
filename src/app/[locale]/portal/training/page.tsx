@@ -21,7 +21,7 @@ export default async function PortalTrainingPage({ params }: PageProps) {
   const admin = createAdminClient() as any
   const [{ data: plan }, { data: tenant }] = await Promise.all([
     admin.from('training_plans').select('title, exercises, updated_at')
-      .eq('client_id', client.id).eq('tenant_id', client.tenant_id).maybeSingle(),
+      .eq('client_id', client.id).eq('tenant_id', client.tenant_id).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
     admin.from('tenants').select('name, logo_url, profession').eq('id', client.tenant_id).single(),
   ])
 

@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui
 import type { NutritionDay, NutritionFood, NutritionMeal } from '@/lib/nutrition/schemas'
 import { calculatePlanAverage, sumNutritionFoods, sumNutritionMeals } from '@/lib/nutrition/calculations'
 import { NutritionTotalsLine, PrintableNutritionPlan, type NutritionPlanDisplay } from './nutrition-plan-presentation'
+import { measurementsSchema, type PlanMeasurements } from '@/lib/nutrition/schemas'
+import { PlanMeasurementsEditor } from './plan-measurements'
 
 const newMeal = (name = 'Colazione'): NutritionMeal => ({ id: crypto.randomUUID(), name, time: '', notes: '', alternatives: '', foods: [] })
 const newDay = (label = 'Giorno tipo'): NutritionDay => ({ id: crypto.randomUUID(), label, meals: [newMeal()] })
@@ -32,26 +34,51 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
   const [targetCalories, setTargetCalories] = useState<number | null>(null)
   const [days, setDays] = useState<NutritionDay[]>([])
   const [hasSavedPlan, setHasSavedPlan] = useState(false)
+  const [plans, setPlans] = useState<any[]>([])
+  const [planId, setPlanId] = useState<string | undefined>()
+  const [version, setVersion] = useState<number | undefined>()
+  const [startsOn, setStartsOn] = useState('')
+  const [endsOn, setEndsOn] = useState('')
+  const [initialMeasurements, setInitialMeasurements] = useState<PlanMeasurements>(() => measurementsSchema.parse({}))
+  const [finalMeasurements, setFinalMeasurements] = useState<PlanMeasurements>(() => measurementsSchema.parse({}))
+  const [baseline, setBaseline] = useState('')
+  const [loadError, setLoadError] = useState('')
+  const currentDraft = JSON.stringify({ title, objective, guidelines, targetCalories, days, startsOn, endsOn, initialMeasurements, finalMeasurements })
+
+  function selectPlan(plan?: any) {
+    const next = {
+      title: plan?.title ?? 'Piano alimentare', objective: plan?.objective ?? '', guidelines: plan?.guidelines ?? '',
+      targetCalories: plan?.target_calories ?? null, days: plan?.days ?? [newDay()],
+      startsOn: plan?.starts_on ?? '', endsOn: plan?.ends_on ?? '',
+      initialMeasurements: measurementsSchema.parse(plan?.initial_measurements ?? {}),
+      finalMeasurements: measurementsSchema.parse(plan?.final_measurements ?? {}),
+    }
+    setPlanId(plan?.id); setVersion(plan?.version); setHasSavedPlan(!!plan)
+    setTitle(next.title); setObjective(next.objective); setGuidelines(next.guidelines)
+    setTargetCalories(next.targetCalories); setDays(next.days)
+    setStartsOn(next.startsOn); setEndsOn(next.endsOn)
+    setInitialMeasurements(next.initialMeasurements); setFinalMeasurements(next.finalMeasurements)
+    setBaseline(JSON.stringify(next))
+    setCollapsed({}); setCollapsedMeals({})
+  }
+  function changePlan(plan?: any) {
+    if (currentDraft !== baseline && !window.confirm('Abbandonare le modifiche non salvate?')) return
+    selectPlan(plan)
+  }
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [collapsedMeals, setCollapsedMeals] = useState<Record<string, boolean>>({})
 
   async function load() {
     setLoading(true)
+    setLoadError('')
     try {
       const response = await fetch(`/api/clients/${clientId}/nutrition`, { cache: 'no-store' })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error)
-      if (payload.plan) {
-        setTitle(payload.plan.title)
-        setObjective(payload.plan.objective ?? '')
-        setGuidelines(payload.plan.guidelines ?? '')
-        setTargetCalories(payload.plan.target_calories ?? null)
-        setDays(payload.plan.days ?? [])
-        setHasSavedPlan(true)
-      } else {
-        setDays([newDay()])
-      }
+      setPlans(payload.plans ?? [])
+      selectPlan(payload.plan)
     } catch (error) {
+      setLoadError('Impossibile caricare i piani alimentari.')
       toast.error(error instanceof Error ? error.message : 'Impossibile caricare il piano')
     } finally { setLoading(false) }
   }
@@ -78,11 +105,15 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
     try {
       const response = await fetch(`/api/clients/${clientId}/nutrition`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, objective, guidelines, targetCalories, days }),
+        body: JSON.stringify({ id: planId, version, title, objective, guidelines, targetCalories, days,
+          startsOn: startsOn || null, endsOn: endsOn || null, initialMeasurements, finalMeasurements }),
       })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error)
       setHasSavedPlan(true)
+      setPlanId(payload.plan.id); setVersion(payload.plan.version)
+      setPlans(current => [payload.plan, ...current.filter(plan => plan.id !== payload.plan.id)])
+      setBaseline(currentDraft)
       toast.success('Piano alimentare salvato e disponibile nel portale cliente.')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Impossibile salvare il piano')
@@ -90,13 +121,25 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
   }
 
   if (loading) return <div className="h-56 animate-pulse rounded-md bg-muted" />
+  if (loadError) return <div role="alert">{loadError}<Button variant="outline" onClick={() => void load()}>Riprova</Button></div>
 
-  const displayPlan: NutritionPlanDisplay = { title, objective, guidelines, targetCalories, days }
+  const displayPlan: NutritionPlanDisplay = { title, objective, guidelines, targetCalories, days,
+    starts_on: startsOn || null, ends_on: endsOn || null, initial_measurements: initialMeasurements, final_measurements: finalMeasurements }
   const average = calculatePlanAverage(days)
 
   return <div className="space-y-5 print:space-y-0">
     {hasSavedPlan && <PrintableNutritionPlan plan={displayPlan} tenant={tenant} client={{ full_name: clientName }} />}
     <div className="space-y-5 print:hidden">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="min-w-0 flex-1 text-sm">Piani alimentari e storico
+          <select className="mt-1 h-10 w-full rounded-md border bg-background px-3" disabled={saving} value={planId ?? ''}
+            onChange={event => changePlan(plans.find(plan => plan.id === event.target.value))}>
+            {!planId && <option value="">Nuovo piano</option>}
+            {plans.map(plan => <option key={plan.id} value={plan.id}>{plan.title} · {plan.starts_on ?? 'Inizio non indicato'} / {plan.ends_on ?? 'Fine non indicata'}</option>)}
+          </select>
+        </label>
+        <Button variant="outline" disabled={saving} onClick={() => changePlan()}><Plus />Nuovo piano</Button>
+      </div>
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-3"><div><CardTitle className="text-base">Piano alimentare</CardTitle><p className="mt-1 text-xs text-muted-foreground">I valori nutrizionali non compilati non vengono stimati.</p></div>
           {hasSavedPlan && <Button variant="outline" onClick={() => window.print()}><Printer />Stampa</Button>}
@@ -106,6 +149,10 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
             <label className="text-xs text-muted-foreground">Titolo<Input className="mt-1" value={title} onChange={event => setTitle(event.target.value)} /></label>
             <label className="text-xs text-muted-foreground">Obiettivo kcal/giorno<Input className="mt-1" type="number" min={0} max={10000} value={targetCalories ?? ''} onChange={event => setTargetCalories(nullableNumber(event.target.value))} placeholder="Non definito" /></label>
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs">Inizio piano<Input className="mt-1" type="date" value={startsOn} max={endsOn || undefined} onChange={event => setStartsOn(event.target.value)} /></label>
+            <label className="text-xs">Fine piano<Input className="mt-1" type="date" value={endsOn} min={startsOn || undefined} onChange={event => setEndsOn(event.target.value)} /></label>
+          </div>
           <label className="block text-xs text-muted-foreground">Obiettivo<textarea className="mt-1 w-full rounded-md border border-input bg-background p-3 text-sm" rows={2} value={objective} onChange={event => setObjective(event.target.value)} placeholder="Obiettivo del percorso alimentare" /></label>
           <label className="block text-xs text-muted-foreground">Indicazioni generali<textarea className="mt-1 w-full rounded-md border border-input bg-background p-3 text-sm" rows={4} value={guidelines} onChange={event => setGuidelines(event.target.value)} placeholder="Idratazione, frequenze, integrazione, indicazioni generali..." /></label>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4"><div><p className="text-xs text-muted-foreground">Media giornaliera</p><NutritionTotalsLine totals={average} /></div>
@@ -113,6 +160,14 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
           </div>
         </CardContent>
       </Card>
+
+      <details className="border-y py-4" open>
+        <summary className="cursor-pointer font-semibold">BIA e rilevazioni iniziali / finali</summary>
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
+          <PlanMeasurementsEditor title="Inizio piano" value={initialMeasurements} onChange={setInitialMeasurements} />
+          <PlanMeasurementsEditor title="Fine piano" value={finalMeasurements} onChange={setFinalMeasurements} />
+        </div>
+      </details>
 
       {days.map((day, dayIndex) => <section key={day.id} className="border-y border-border">
         <CardHeader className="nutrition-day-heading flex-row flex-wrap items-center gap-2 py-4">

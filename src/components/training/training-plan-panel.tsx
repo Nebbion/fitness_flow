@@ -20,17 +20,33 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
   const [link, setLink] = useState('')
   const [library, setLibrary] = useState<LibraryExercise[]>([])
   const [selectedLibraryId, setSelectedLibraryId] = useState('')
+  const [plans, setPlans] = useState<any[]>([])
+  const [planId, setPlanId] = useState<string | undefined>()
+  const [version, setVersion] = useState<number | undefined>()
+  const [baseline, setBaseline] = useState('')
 
-  async function load() {
+  function selectPlan(plan?: any) {
+    setPlanId(plan?.id)
+    setVersion(plan?.version)
+    const nextTitle = plan?.title ?? 'Scheda allenamento'
+    const nextExercises = (plan?.exercises ?? []).map((exercise: Exercise) => ({ ...exercise, images: exercise.images ?? [] }))
+    setTitle(nextTitle)
+    setExercises(nextExercises)
+    setBaseline(JSON.stringify({ title: nextTitle, exercises: nextExercises }))
+  }
+  function changePlan(plan?: any) {
+    if (JSON.stringify({ title, exercises }) !== baseline && !window.confirm('Abbandonare le modifiche non salvate?')) return
+    selectPlan(plan)
+  }
+
+  async function load(selectedId?: string) {
     setLoading(true)
     try {
       const response = await fetch(`/api/clients/${clientId}/training`)
       const data = await response.json()
       if (!response.ok) throw new Error(data.error)
-      if (data.plan) {
-        setTitle(data.plan.title)
-        setExercises(data.plan.exercises.map((exercise: Exercise) => ({ ...exercise, images: exercise.images ?? [] })))
-      }
+      setPlans(data.plans ?? [])
+      selectPlan(data.plans?.find((plan: any) => plan.id === selectedId) ?? data.plan)
       setSessions(data.sessions)
       setAccess(data.access)
     } catch (error: any) { toast.error(error.message) }
@@ -75,12 +91,12 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
     setSaving(true)
     try {
       const response = await fetch(`/api/clients/${clientId}/training`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, exercises }),
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: planId, version, title, exercises }),
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error)
       toast.success('Scheda salvata. Le sessioni passate restano invariate.')
-      await load()
+      await load(data.plan.id)
     } catch (error: any) { toast.error(error.message) }
     finally { setSaving(false) }
   }
@@ -107,6 +123,16 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
   if (loading) return <div className="h-48 rounded-md bg-muted animate-pulse" />
 
   return <div className="space-y-4">
+    <div className="flex flex-wrap items-end gap-3">
+      <label className="min-w-0 flex-1 text-sm">Schede allenamento
+        <select className="mt-1 h-10 w-full rounded-md border bg-background px-3" value={planId ?? ''} disabled={saving}
+          onChange={event => changePlan(plans.find(plan => plan.id === event.target.value))}>
+          {!planId && <option value="">Nuova scheda</option>}
+          {plans.map(plan => <option key={plan.id} value={plan.id}>{plan.title}</option>)}
+        </select>
+      </label>
+      <Button variant="outline" disabled={saving} onClick={() => changePlan()}><Plus />Nuova scheda</Button>
+    </div>
     <Card>
       <CardHeader><CardTitle className="text-base">Scheda assegnata</CardTitle></CardHeader>
       <CardContent className="space-y-4">
