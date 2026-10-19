@@ -6,6 +6,7 @@ export const exerciseSchema = z.object({
   targetSets: z.number().int().min(1).max(20),
   targetReps: z.string().trim().min(1).max(30),
   targetWeightKg: z.number().min(0).max(2000).nullable().default(null),
+  isometrySeconds: z.number().int().min(1).max(3600).nullable().default(null),
   notes: z.string().max(500).default(''),
   images: z.array(z.object({
     path: z.string().trim().min(1).max(500),
@@ -18,6 +19,7 @@ export const exerciseLibraryInputSchema = z.object({
   defaultSets: z.number().int().min(1).max(20).default(3),
   defaultReps: z.string().trim().min(1).max(30).default('8-12'),
   defaultWeightKg: z.number().min(0).max(2000).nullable().default(null),
+  defaultIsometrySeconds: z.number().int().min(1).max(3600).nullable().default(null),
   notes: z.string().max(500).default(''),
   images: exerciseSchema.shape.images,
 })

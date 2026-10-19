@@ -148,6 +148,7 @@ export function ClientTrainingApp({ token }: { token?: string }) {
             <p className="text-sm text-muted-foreground">{exercise.targetSets} serie · {exercise.targetReps} ripetizioni</p></div></div>
           {exercise.notes && <p className="mt-2 text-sm">{exercise.notes}</p>}
           {exercise.targetWeightKg != null && <p className="mt-2 text-sm">Carico consigliato: {exercise.targetWeightKg} kg</p>}
+          {exercise.isometrySeconds != null && <p className="mt-2 text-sm">Tempo dell'esercizio - isometria: <strong>{exercise.isometrySeconds} s</strong></p>}
           <ExerciseGallery images={exercise.images} name={exercise.name} />
         </section>)}
       </div>}
@@ -161,6 +162,7 @@ export function ClientTrainingApp({ token }: { token?: string }) {
             <p className="text-sm text-muted-foreground">{exercise.targetSets} serie · {exercise.targetReps} ripetizioni</p>
             {exercise.notes && <p className="text-sm mt-2">{exercise.notes}</p>}
             {exercise.targetWeightKg != null && <p className="mt-2 text-sm">Carico consigliato: {exercise.targetWeightKg} kg</p>}
+            {exercise.isometrySeconds != null && <p className="mt-2 text-sm">Tempo dell'esercizio - isometria: <strong>{exercise.isometrySeconds} s</strong></p>}
             <ExerciseGallery images={exercise.images} name={exercise.name} /></div>
           <div className="p-3 space-y-3">
             {entry.sets.map((set, setIndex) => <div key={setIndex} className="grid grid-cols-[2rem_1fr_1fr] gap-2 items-end">

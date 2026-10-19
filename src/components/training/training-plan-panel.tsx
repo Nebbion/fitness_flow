@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui/index'
 
 type ExerciseImage = { path: string; alt: string; url?: string }
-type Exercise = { id: string; name: string; targetSets: number; targetReps: string; targetWeightKg?: number | null; notes: string; images: ExerciseImage[] }
-type LibraryExercise = { id: string; name: string; default_sets: number; default_reps: string; default_weight_kg?: number | null; notes: string; images: ExerciseImage[] }
+type Exercise = { id: string; name: string; targetSets: number; targetReps: string; targetWeightKg?: number | null; isometrySeconds?: number | null; notes: string; images: ExerciseImage[] }
+type LibraryExercise = { id: string; name: string; default_sets: number; default_reps: string; default_weight_kg?: number | null; default_isometry_seconds?: number | null; notes: string; images: ExerciseImage[] }
 
 export function TrainingPlanPanel({ clientId, locale }: { clientId: string; locale: string }) {
   const [loading, setLoading] = useState(true)
@@ -64,6 +64,7 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
       targetSets: source.default_sets,
       targetReps: source.default_reps,
       targetWeightKg: source.default_weight_kg ?? null,
+      isometrySeconds: source.default_isometry_seconds ?? null,
       notes: source.notes,
       images: source.images ?? [],
     }])
@@ -141,6 +142,10 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
           <label className="block text-xs text-muted-foreground">Carico consigliato (kg)
             <Input type="number" min={0} max={2000} step="any" value={exercise.targetWeightKg ?? ''}
               onChange={event => updateExercise(index, { targetWeightKg: event.target.value === '' ? null : Number(event.target.value) })} />
+          </label>
+          <label className="block text-xs text-muted-foreground">Tempo dell'esercizio - isometria (secondi, facoltativo)
+            <Input className="mt-1" type="number" min={1} max={3600} step={1} placeholder="Es. 30" value={exercise.isometrySeconds ?? ''}
+              onChange={event => updateExercise(index, { isometrySeconds: event.target.value === '' ? null : Number(event.target.value) })} />
           </label>
           {(exercise.images?.length ?? 0) > 0 && <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {exercise.images.map(image => <div key={image.path} className="aspect-square overflow-hidden rounded-md border bg-white">

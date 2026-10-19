@@ -13,6 +13,7 @@ type LibraryExercise = {
   default_sets: number
   default_reps: string
   default_weight_kg: number | null
+  default_isometry_seconds?: number | null
   notes: string
   images: ExerciseImage[]
 }
@@ -22,11 +23,12 @@ type Draft = {
   defaultSets: number
   defaultReps: string
   defaultWeightKg: number | null
+  defaultIsometrySeconds: number | null
   notes: string
   images: ExerciseImage[]
 }
 
-const emptyDraft: Draft = { name: '', defaultSets: 3, defaultReps: '8-12', defaultWeightKg: null, notes: '', images: [] }
+const emptyDraft: Draft = { name: '', defaultSets: 3, defaultReps: '8-12', defaultWeightKg: null, defaultIsometrySeconds: null, notes: '', images: [] }
 
 export function ExerciseLibrary() {
   const [exercises, setExercises] = useState<LibraryExercise[]>([])
@@ -64,6 +66,7 @@ export function ExerciseLibrary() {
       defaultSets: exercise.default_sets,
       defaultReps: exercise.default_reps,
       defaultWeightKg: exercise.default_weight_kg ?? null,
+      defaultIsometrySeconds: exercise.default_isometry_seconds ?? null,
       notes: exercise.notes,
       images: exercise.images ?? [],
     })
@@ -159,6 +162,10 @@ export function ExerciseLibrary() {
           <Input type="number" min={0} max={2000} step="any" value={draft.defaultWeightKg ?? ''}
             onChange={event => setDraft(current => ({ ...current, defaultWeightKg: event.target.value === '' ? null : Number(event.target.value) }))} />
         </label>
+        <label className="block text-xs text-muted-foreground">Tempo dell'esercizio - isometria (secondi, facoltativo)
+          <Input className="mt-1" type="number" min={1} max={3600} step={1} placeholder="Es. 30" value={draft.defaultIsometrySeconds ?? ''}
+            onChange={event => setDraft(current => ({ ...current, defaultIsometrySeconds: event.target.value === '' ? null : Number(event.target.value) }))} />
+        </label>
         <textarea className="w-full rounded-md border border-input bg-background p-3 text-sm" rows={3} maxLength={500}
           value={draft.notes} onChange={event => setDraft(current => ({ ...current, notes: event.target.value }))}
           placeholder="Istruzioni tecniche e accorgimenti" />
@@ -209,6 +216,7 @@ export function ExerciseLibrary() {
               <Button size="icon" variant="ghost" aria-label="Elimina" onClick={() => remove(exercise)}><Trash2 /></Button></div></div>
             {exercise.notes && <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{exercise.notes}</p>}
             {exercise.default_weight_kg != null && <p className="mt-2 text-sm font-medium">{exercise.default_weight_kg} kg</p>}
+            {exercise.default_isometry_seconds != null && <p className="mt-2 text-sm">Tempo dell'esercizio - isometria: {exercise.default_isometry_seconds} s</p>}
           </div>
         </div>)}
       </div>}

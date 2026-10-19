@@ -2,6 +2,17 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { exerciseLibraryInputSchema, sessionEntriesSchema, trainingPlanSchema } from './schemas.ts'
 
+test('isometry is optional for existing plans and retained when assigned', () => {
+  const exercise = { id: crypto.randomUUID(), name: 'Plank', targetSets: 3, targetReps: '1' }
+  assert.equal(trainingPlanSchema.parse({ title: 'Scheda', exercises: [exercise] }).exercises[0].isometrySeconds, null)
+  assert.equal(trainingPlanSchema.parse({ title: 'Scheda', exercises: [{ ...exercise, isometrySeconds: 30 }] }).exercises[0].isometrySeconds, 30)
+  assert.equal(exerciseLibraryInputSchema.parse({ name: 'Plank', defaultIsometrySeconds: 30 }).defaultIsometrySeconds, 30)
+  for (const invalid of [0, -1, 1.5, 3601]) {
+    assert.equal(exerciseLibraryInputSchema.safeParse({ name: 'Plank', defaultIsometrySeconds: invalid }).success, false)
+    assert.equal(trainingPlanSchema.safeParse({ title: 'Scheda', exercises: [{ ...exercise, isometrySeconds: invalid }] }).success, false)
+  }
+})
+
 test('recommended weights preserve zero and decimals and reject invalid loads', () => {
   for (const weight of [null, 0, 20, 30.5]) {
     assert.equal(exerciseLibraryInputSchema.parse({ name: 'Squat', defaultWeightKg: weight }).defaultWeightKg, weight)

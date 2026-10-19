@@ -25,6 +25,7 @@ export function PortalTrainingPlan({ plan, tenant, client }: { plan: any; tenant
             <p className="text-xs font-medium uppercase text-muted-foreground">Esercizio {index + 1}</p><h2 className="mt-1 font-semibold">{exercise.name}</h2></div>
             <p className="shrink-0 text-sm"><strong>{exercise.targetSets}</strong> serie · <strong>{exercise.targetReps}</strong> rip.</p></div>
             {exercise.notes && <p className="mt-3 text-sm leading-6">{exercise.notes}</p>}
+            {exercise.isometrySeconds != null && <p className="mt-2 text-sm">Tempo dell'esercizio - isometria: <strong>{exercise.isometrySeconds} s</strong></p>}
             <ExerciseGallery images={exercise.images} name={exercise.name} />
           </div>
         </section>)}
