@@ -58,8 +58,12 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    overscroll-behavior-y: none;
   }
 }
+
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
 /* Scrollbar personalizzata */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

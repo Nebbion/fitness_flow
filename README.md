@@ -18,6 +18,7 @@ Piattaforma SaaS multi-tenant per professionisti del fitness e del benessere.
 
 - [Panoramica tecnica e configurazione email/WhatsApp](docs/panoramica-tecnica.md)
 - [Promemoria WhatsApp: guida operativa dettagliata](docs/whatsapp-reminders.md)
+- [PWA area cliente: accesso, installazione e verifica](docs/pwa-cliente.md)
 
 ---
 

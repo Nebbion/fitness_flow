@@ -25,15 +25,19 @@ export async function GET() {
   if (!ctx) return NextResponse.json({ error: 'Accesso non disponibile' }, { status: 403, headers })
   const { client, tenant, admin } = ctx
   const scoped = (table: string) => admin.from(table).select('*').eq('client_id', client.id).eq('tenant_id', client.tenant_id)
-  const [plan, open, history] = await Promise.all([
+  const [plan, open, history, appointments] = await Promise.all([
     scoped('training_plans').order('updated_at', { ascending: false }), scoped('training_sessions').is('completed_at', null).maybeSingle(),
     scoped('training_sessions').not('completed_at', 'is', null).order('completed_at', { ascending: false }).limit(100),
+    admin.from('appointments').select(`id, start_at, end_at, status,
+      services (name, color), profiles!appointments_staff_id_fkey (full_name)`)
+      .eq('client_id', client.id).eq('tenant_id', client.tenant_id).order('start_at', { ascending: false }).limit(40),
   ])
-  if ([plan, open, history].some(result => result.error)) return NextResponse.json({ error: 'Impossibile caricare gli allenamenti' }, { status: 500, headers })
+  if ([plan, open, history, appointments].some(result => result.error)) return NextResponse.json({ error: 'Impossibile caricare gli allenamenti' }, { status: 500, headers })
   const plans = await Promise.all((plan.data ?? []).map((item: any) => withSignedExerciseImages(admin, item)))
   return NextResponse.json({ client, tenant, plans, plan: plans[0] ?? null,
     openSession: open.data ? { ...open.data, plan_snapshot: await withSignedExerciseImages(admin, open.data.plan_snapshot) } : null,
     history: history.data ?? [],
+    appointments: appointments.data ?? [],
   }, { headers })
 }
 
