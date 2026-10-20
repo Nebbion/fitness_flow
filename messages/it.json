@@ -94,9 +94,12 @@
       "backToLogin": "Torna all'accesso",
       "resetTitle": "Imposta una nuova password",
       "resetSubtitle": "Scegli una password sicura di almeno 8 caratteri",
+      "inviteTitle": "Crea la tua password",
+      "inviteSubtitle": "Scegli una password per accedere al tuo portale personale.",
       "password": "Nuova password",
       "confirmPassword": "Conferma nuova password",
       "update": "Aggiorna password",
+      "inviteUpdate": "Crea password",
       "updating": "Aggiornamento...",
       "invalidLink": "Il link non è valido o è scaduto.",
       "requestNewLink": "Richiedi un nuovo link"

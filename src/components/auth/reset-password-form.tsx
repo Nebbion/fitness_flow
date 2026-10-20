@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export function ResetPasswordForm({ locale }: { locale: string }) {
+export function ResetPasswordForm({ locale, isInvitationSetup = false }: { locale: string; isInvitationSetup?: boolean }) {
   const t = useTranslations('auth.passwordRecovery')
   const tErrors = useTranslations('errors')
   const router = useRouter()
@@ -41,6 +41,11 @@ export function ResetPasswordForm({ locale }: { locale: string }) {
       const supabase = createClient()
       const { error } = await supabase.auth.updateUser({ password: values.password })
       if (error) throw error
+      if (isInvitationSetup) {
+        router.replace(`/${locale}/portal`)
+        router.refresh()
+        return
+      }
       await supabase.auth.signOut()
       router.replace(`/${locale}/auth/login?reset=success`)
       router.refresh()
@@ -72,7 +77,7 @@ export function ResetPasswordForm({ locale }: { locale: string }) {
       {errors.password_confirm && <p className="text-xs text-destructive">{tErrors(errors.password_confirm.message?.replace('errors.', '') as any)}</p>}
     </div>
     <Button type="submit" className="w-full" disabled={loading}>
-      {loading ? <><Loader2 className="animate-spin" />{t('updating')}</> : t('update')}
+      {loading ? <><Loader2 className="animate-spin" />{t('updating')}</> : t(isInvitationSetup ? 'inviteUpdate' : 'update')}
     </Button>
   </form>
 }

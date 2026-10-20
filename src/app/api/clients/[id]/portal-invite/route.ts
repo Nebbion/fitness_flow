@@ -63,7 +63,8 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const locale = client.preferred_language ?? 'it'
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const redirectTo = `${appUrl}/${locale}/auth/callback?next=/${locale}/portal`
+    const portalRedirectTo = `${appUrl}/${locale}/auth/callback?next=${encodeURIComponent(`/${locale}/portal`)}`
+    const passwordSetupRedirectTo = `${appUrl}/${locale}/auth/callback?next=${encodeURIComponent(`/${locale}/auth/reset-password?mode=invite`)}`
 
     // Crea o recupera l'utente auth per il cliente
     const { data: existingUser } = await admin.auth.admin.listUsers()
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: client.email,
         options: {
-          emailRedirectTo: redirectTo,
+          emailRedirectTo: portalRedirectTo,
           shouldCreateUser: false,
         },
       })
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest, { params }: Params) {
             full_name: client.full_name,
             preferred_language: locale,
           },
-          redirectTo,
+          redirectTo: passwordSetupRedirectTo,
         }
       )
 

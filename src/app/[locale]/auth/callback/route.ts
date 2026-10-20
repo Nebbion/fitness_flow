@@ -13,13 +13,15 @@ export async function GET(
   const next = requestedNext.startsWith('/') && !requestedNext.startsWith('//')
     ? requestedNext
     : `/${locale}`
+  const passwordResetPath = `/${locale}/auth/reset-password`
+  const isPasswordReset = next === passwordResetPath || next.startsWith(`${passwordResetPath}?`)
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
 
   // Gestione errori da Supabase Auth
   if (error) {
     console.error('Auth callback error:', error, errorDescription)
-    const errorPath = next === `/${locale}/auth/reset-password`
+    const errorPath = isPasswordReset
       ? `/${locale}/auth/forgot-password`
       : `/${locale}/auth/login`
     return NextResponse.redirect(`${origin}${errorPath}?error=${encodeURIComponent(errorDescription ?? error)}`)
@@ -35,7 +37,7 @@ export async function GET(
         ? 'confirmation_same_browser'
         : exchangeError.message
 
-      const exchangeErrorPath = next === `/${locale}/auth/reset-password`
+      const exchangeErrorPath = isPasswordReset
         ? `/${locale}/auth/forgot-password`
         : `/${locale}/auth/login`
       return NextResponse.redirect(`${origin}${exchangeErrorPath}?error=${encodeURIComponent(callbackError)}`)
@@ -43,7 +45,7 @@ export async function GET(
 
     // Il recupero password deve arrivare alla schermata dedicata anche per
     // account che non hanno ancora completato l'onboarding.
-    if (next === `/${locale}/auth/reset-password`) {
+    if (isPasswordReset) {
       return NextResponse.redirect(`${origin}${next}`)
     }
 

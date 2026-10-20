@@ -94,9 +94,12 @@
       "backToLogin": "Back to sign in",
       "resetTitle": "Set a new password",
       "resetSubtitle": "Choose a secure password with at least 8 characters",
+      "inviteTitle": "Create your password",
+      "inviteSubtitle": "Choose a password to access your personal portal.",
       "password": "New password",
       "confirmPassword": "Confirm new password",
       "update": "Update password",
+      "inviteUpdate": "Create password",
       "updating": "Updating...",
       "invalidLink": "This link is invalid or has expired.",
       "requestNewLink": "Request a new link"
