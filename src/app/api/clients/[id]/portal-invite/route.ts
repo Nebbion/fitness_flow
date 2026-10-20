@@ -8,6 +8,7 @@ interface Params {
 type TenantProfile = {
   tenant_id: string
   role: string
+  full_name: string | null
 }
 
 type PortalClient = {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('tenant_id, role')
+      .select('tenant_id, role, full_name')
       .eq('id', user.id)
       .single()
 
@@ -43,6 +44,14 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (profile?.role !== 'TENANT_ADMIN') {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
     }
+
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('name, brand_primary, brand_accent')
+      .eq('id', profile.tenant_id)
+      .single()
+
+    if (!tenant) return NextResponse.json({ error: 'Studio non trovato' }, { status: 404 })
 
     // Recupera il cliente
     const { data: clientData } = await supabase
@@ -63,8 +72,15 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const locale = client.preferred_language ?? 'it'
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const portalRedirectTo = `${appUrl}/${locale}/auth/callback?next=${encodeURIComponent(`/${locale}/portal`)}`
-    const passwordSetupRedirectTo = `${appUrl}/${locale}/auth/callback?next=${encodeURIComponent(`/${locale}/auth/reset-password?mode=invite`)}`
+    const portalRedirectTo = `${appUrl}/${locale}/portal`
+    const passwordSetupRedirectTo = `${appUrl}/${locale}/auth/reset-password?mode=invite`
+    const emailMetadata = {
+      full_name: client.full_name,
+      tenant_name: tenant.name,
+      professional_name: profile.full_name ?? tenant.name,
+      brand_primary: tenant.brand_primary ?? '#2563EB',
+      brand_accent: tenant.brand_accent ?? '#06B6D4',
+    }
 
     // Crea o recupera l'utente auth per il cliente
     const { data: existingUser } = await admin.auth.admin.listUsers()
@@ -79,6 +95,10 @@ export async function POST(request: NextRequest, { params }: Params) {
       // Accounts created before this flow have no marker, so guide them through
       // password creation once instead of silently sending them to the portal.
       const needsPasswordSetup = existingAuthUser.user_metadata?.portal_password_set !== true
+      const { error: metadataError } = await admin.auth.admin.updateUserById(clientUserId, {
+        user_metadata: { ...existingAuthUser.user_metadata, ...emailMetadata },
+      })
+      if (metadataError) throw new Error('Errore aggiornamento invito: ' + metadataError.message)
       const { data: existingProfileData } = await admin
         .from('profiles')
         .select('tenant_id, role')
@@ -125,9 +145,9 @@ export async function POST(request: NextRequest, { params }: Params) {
         client.email,
         {
           data: {
-            full_name: client.full_name,
             preferred_language: locale,
             portal_password_set: false,
+            ...emailMetadata,
           },
           redirectTo: passwordSetupRedirectTo,
         }
