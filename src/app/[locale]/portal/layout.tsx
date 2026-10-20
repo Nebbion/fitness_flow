@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { getPortalClientMemberships } from '@/lib/portal/client-memberships'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
-import { Activity, CalendarDays, Dumbbell, ClipboardList, History, LogOut } from 'lucide-react'
+import { Activity, CalendarDays, Dumbbell, ClipboardList, History, LogOut, Share2 } from 'lucide-react'
 import { SessionTimeout } from '@/components/auth/session-timeout'
 import { PwaInstallHelp } from '@/components/pwa/pwa-install-help'
 
@@ -33,22 +34,20 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
 
   if (!profile || profile.role !== 'CLIENT') redirect(`/${locale}/dashboard`)
 
-  // Recupera il tenant del cliente (tramite clients)
-  const { data: clientRecord } = await supabase
-    .from('clients')
-    .select('id, full_name, tenants(name, logo_url, brand_primary, profession)')
-    .eq('profile_id', user.id)
-    .single()
-
-  const tenant = Array.isArray(clientRecord?.tenants)
-    ? clientRecord.tenants[0]
-    : clientRecord?.tenants
+  const memberships = await getPortalClientMemberships(user.id)
+  const tenant = memberships[0]?.tenants
+  const hasTraining = memberships.some(item => ['personal_trainer', 'nutritionist'].includes(item.tenants?.profession ?? ''))
+  const hasNutrition = memberships.some(item => item.tenants?.profession === 'nutritionist')
 
   const portalNav = [
-    { href: `/${locale}/portal/training?view=plan`, label: 'Scheda', icon: ClipboardList },
-    { href: `/${locale}/portal/training?view=workout`, label: 'Allenamento', icon: Dumbbell },
-    { href: `/${locale}/portal/training?view=history`, label: 'Storico', icon: History },
+    ...(hasTraining ? [
+      { href: `/${locale}/portal/training?view=plan`, label: 'Scheda', icon: ClipboardList },
+      { href: `/${locale}/portal/training?view=workout`, label: 'Allenamento', icon: Dumbbell },
+      { href: `/${locale}/portal/training?view=history`, label: 'Storico', icon: History },
+    ] : []),
+    ...(hasNutrition ? [{ href: `/${locale}/portal/nutrition`, label: 'Alimentazione', icon: ClipboardList }] : []),
     { href: `/${locale}/portal/appointments`, label: t('appointments'), icon: CalendarDays },
+    ...(memberships.length > 1 ? [{ href: `/${locale}/portal/sharing`, label: 'Condivisioni', icon: Share2 }] : []),
   ]
 
   return (
@@ -115,7 +114,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
 
       {/* Mobile bottom nav */}
       <nav className="safe-bottom lg:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card z-30 print:hidden">
-        <div className="grid grid-cols-4">
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${Math.max(1, portalNav.length)}, minmax(0, 1fr))` }}>
           {portalNav.map(item => {
             const Icon = item.icon
             return (

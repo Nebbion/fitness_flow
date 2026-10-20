@@ -115,16 +115,8 @@ export async function POST(request: NextRequest, { params }: Params) {
         )
       }
 
-      if (existingProfile?.tenant_id && existingProfile.tenant_id !== profile.tenant_id) {
-        return NextResponse.json(
-          { error: 'Questa email e gia associata a un altro portale cliente.' },
-          { status: 409 }
-        )
-      }
-
       await admin.from('profiles').upsert({
         id: clientUserId,
-        tenant_id: profile.tenant_id,
         role: 'CLIENT',
         full_name: client.full_name,
         preferred_language: locale,

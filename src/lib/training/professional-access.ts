@@ -1,6 +1,6 @@
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 
-export async function getTrainingProfessional() {
+export async function getProfessional() {
   const supabase = await createClient() as any
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -11,11 +11,31 @@ export async function getTrainingProfessional() {
     .eq('id', user.id)
     .single()
 
-  const tenant = Array.isArray(profile?.tenants) ? profile.tenants[0] : profile?.tenants
   if (!profile?.tenant_id || !['TENANT_ADMIN', 'STAFF'].includes(profile.role)) return null
-  if (!['personal_trainer', 'nutritionist'].includes(tenant?.profession ?? '')) return null
-
   return { user, profile, admin: createAdminClient() as any }
+}
+
+export async function getTrainingProfessional() {
+  const actor = await getProfessional()
+  if (!actor) return null
+  const tenant = Array.isArray(actor.profile?.tenants) ? actor.profile.tenants[0] : actor.profile?.tenants
+  if (!['personal_trainer', 'nutritionist'].includes(tenant?.profession ?? '')) return null
+  return actor
+}
+
+export async function getProfessionalClientContext(clientId: string) {
+  const actor = await getProfessional()
+  if (!actor) return null
+  const { user, profile, admin } = actor
+  const { data: client } = await admin
+    .from('clients')
+    .select('id, tenant_id, assigned_staff_id, active')
+    .eq('id', clientId)
+    .eq('tenant_id', profile.tenant_id)
+    .single()
+
+  if (!client || (profile.role === 'STAFF' && client.assigned_staff_id !== user.id)) return null
+  return { user, profile, client, admin }
 }
 
 export async function getTrainingProfessionalContext(clientId: string) {

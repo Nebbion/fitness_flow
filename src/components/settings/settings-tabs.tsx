@@ -31,6 +31,15 @@ const TABS = [
   { key: 'customFields', label: 'Campi custom',icon: Sliders },
 ]
 
+const PROFESSION_LABELS: Record<string, string> = {
+  nutritionist: 'Nutrizionista',
+  personal_trainer: 'Personal trainer',
+  physiotherapist: 'Fisioterapista',
+  osteopath: 'Osteopata',
+  massage_therapist: 'Massoterapista',
+  other: 'Altro professionista',
+}
+
 export function SettingsTabs({ locale, role, tenant, adminAccount, customFields, notifRules }: SettingsTabsProps) {
   const router = useRouter()
   const logoInputRef = useRef<HTMLInputElement | null>(null)
@@ -170,6 +179,10 @@ export function SettingsTabs({ locale, role, tenant, adminAccount, customFields,
         <Card>
           <CardHeader><CardTitle className="text-base">Dati aziendali</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            <div className="rounded-md border border-border bg-muted/40 px-3 py-2.5">
+              <p className="text-xs font-medium text-muted-foreground">Categoria professionale</p>
+              <p className="mt-0.5 text-sm font-semibold">{PROFESSION_LABELS[tenant?.profession] ?? PROFESSION_LABELS.other}</p>
+            </div>
             <div className="space-y-2">
               <Label>Nome studio</Label>
               <Input

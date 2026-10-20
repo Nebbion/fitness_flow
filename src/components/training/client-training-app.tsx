@@ -51,12 +51,14 @@ function SaveState({ status, savedAt, onRetry }: { status: SaveStatus; savedAt: 
   return <span className="flex items-center gap-1.5 text-xs text-emerald-700" role="status"><Check className="h-3.5 w-3.5" />{savedAt ? `Salvato ${savedAt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}` : 'Salvato'}</span>
 }
 
-export function ClientTrainingApp({ token, locale = 'it', initialView = 'plan' }: {
+export function ClientTrainingApp({ token, locale = 'it', initialView = 'plan', clientOptions = [] }: {
   token?: string
   locale?: string
   initialView?: View
+  clientOptions?: Array<{ id: string; label: string }>
 }) {
-  const endpoint = token ? `/api/training/${token}` : '/api/portal/training'
+  const [selectedClientId, setSelectedClientId] = useState(clientOptions[0]?.id ?? '')
+  const endpoint = token ? `/api/training/${token}` : `/api/portal/training${selectedClientId ? `?clientId=${encodeURIComponent(selectedClientId)}` : ''}`
   const dateLocale = locale === 'en' ? 'en-GB' : 'it-IT'
   const [data, setData] = useState<any>(null)
   const [session, setSession] = useState<any>(null)
@@ -165,7 +167,7 @@ export function ClientTrainingApp({ token, locale = 'it', initialView = 'plan' }
     }
   }
 
-  useEffect(() => { load() }, [token])
+  useEffect(() => { load() }, [token, selectedClientId])
   useEffect(() => { setView(initialView) }, [initialView])
   useEffect(() => {
     const online = () => { if (sessionRef.current) requestSave(false) }
@@ -181,7 +183,7 @@ export function ClientTrainingApp({ token, locale = 'it', initialView = 'plan' }
     try {
       const response = await fetch(endpoint, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'start', planId: selectedPlanId || undefined }),
+        body: JSON.stringify({ action: 'start', planId: selectedPlanId || undefined, ...(token ? {} : { clientId: selectedClientId }) }),
       })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error)
@@ -198,7 +200,7 @@ export function ClientTrainingApp({ token, locale = 'it', initialView = 'plan' }
     try {
       const response = await fetch(endpoint, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
-        body: JSON.stringify(mutation),
+        body: JSON.stringify({ ...mutation, ...(token ? {} : { clientId: selectedClientId }) }),
       })
       const payload = await response.json()
       if (!response.ok) throw Object.assign(new Error(payload.error), { status: response.status })
@@ -344,6 +346,11 @@ export function ClientTrainingApp({ token, locale = 'it', initialView = 'plan' }
       </header>}
 
       <div className="mx-auto max-w-2xl space-y-4 p-4">
+        {!token && clientOptions.length > 1 && !session && <label className="block text-sm font-medium">Professionista
+          <select className="mt-2 h-11 w-full rounded-lg border bg-background px-3" value={selectedClientId} onChange={event => setSelectedClientId(event.target.value)}>
+            {clientOptions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+          </select>
+        </label>}
         {!token && session && <div className="flex justify-end"><SaveState status={status} savedAt={savedAt} onRetry={() => requestSave(false)} /></div>}
         {token && session && <div className="flex justify-end sm:hidden"><SaveState status={status} savedAt={savedAt} onRetry={() => requestSave(false)} /></div>}
         {error && status === 'error' && <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" role="alert"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><span className="flex-1">{error}</span>{saveBlocked && <Button type="button" size="sm" variant="outline" onClick={discardLocalAndReload}>Usa dati server</Button>}</div>}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Calendar, Dumbbell, FileText, TrendingUp, User, Utensils } from 'lucide-react'
+import { Calendar, Dumbbell, FileText, Share2, TrendingUp, User, Utensils } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ClientOverview } from './client-overview'
 import { ClientAppointmentsList } from './client-appointments-list'
@@ -10,6 +10,7 @@ import { ClientDocumentsList } from './client-documents-list'
 import { ClientProgressPanel } from './client-progress-panel'
 import { TrainingPlanPanel } from '@/components/training/training-plan-panel'
 import { NutritionPlanPanel } from '@/components/nutrition/nutrition-plan-panel'
+import { SharedClientDataPanel } from './shared-client-data-panel'
 import type { CustomFieldDefinition, UserRole } from '@/types'
 
 interface ClientTabsProps {
@@ -44,7 +45,7 @@ export function ClientTabs({
   const t = useTranslations('clients.detail')
   const supportsTraining = ['personal_trainer', 'nutritionist'].includes(profession)
   const supportsNutrition = profession === 'nutritionist'
-  const allowedInitialTabs = ['overview', 'appointments', 'documents', 'progress', supportsTraining && 'training', supportsNutrition && 'nutrition'].filter(Boolean)
+  const allowedInitialTabs = ['overview', 'appointments', 'documents', 'progress', 'shared', supportsTraining && 'training', supportsNutrition && 'nutrition'].filter(Boolean)
   const [activeTab, setActiveTab] = useState(allowedInitialTabs.includes(initialTab ?? '') ? initialTab! : 'overview')
 
   const tabs = [
@@ -54,6 +55,7 @@ export function ClientTabs({
     { key: 'progress',      label: t('progress'),      icon: TrendingUp,count: counts.progress },
     ...(supportsTraining ? [{ key: 'training', label: 'Allenamento', icon: Dumbbell, count: null }] : []),
     ...(supportsNutrition ? [{ key: 'nutrition', label: 'Alimentazione', icon: Utensils, count: null }] : []),
+    { key: 'shared', label: 'Condivisi', icon: Share2, count: null },
   ]
 
   return (
@@ -125,6 +127,7 @@ export function ClientTabs({
         )}
         {activeTab === 'training' && <TrainingPlanPanel clientId={client.id} locale={locale} />}
         {activeTab === 'nutrition' && <NutritionPlanPanel clientId={client.id} clientName={client.full_name} tenant={tenant} />}
+        {activeTab === 'shared' && <SharedClientDataPanel clientId={client.id} />}
       </div>
     </div>
   )

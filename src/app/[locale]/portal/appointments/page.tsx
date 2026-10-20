@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { getPortalClientMemberships } from '@/lib/portal/client-memberships'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { Calendar } from 'lucide-react'
@@ -26,27 +27,28 @@ export default async function PortalAppointmentsPage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/auth/login`)
 
-  const { data: client } = await supabase
-    .from('clients').select('id').eq('profile_id', user.id).single()
-  if (!client) redirect(`/${locale}/auth/login`)
+  const memberships = await getPortalClientMemberships(user.id)
+  if (!memberships.length) redirect(`/${locale}/auth/login`)
+  const clientIds = memberships.map(item => item.id)
+  const admin = createAdminClient() as any
 
   const now = new Date().toISOString()
 
   const [{ data: upcoming }, { data: past }] = await Promise.all([
-    supabase.from('appointments')
+    admin.from('appointments')
       .select(`id, start_at, end_at, status, notes,
         services (name, color),
         profiles!appointments_staff_id_fkey (full_name)`)
-      .eq('client_id', client.id)
+      .in('client_id', clientIds)
       .gte('start_at', now)
       .neq('status', 'cancelled')
       .order('start_at', { ascending: true })
       .limit(20),
-    supabase.from('appointments')
+    admin.from('appointments')
       .select(`id, start_at, end_at, status, notes,
         services (name, color),
         profiles!appointments_staff_id_fkey (full_name)`)
-      .eq('client_id', client.id)
+      .in('client_id', clientIds)
       .lt('start_at', now)
       .order('start_at', { ascending: false })
       .limit(20),
@@ -85,7 +87,7 @@ export default async function PortalAppointmentsPage({ params }: PageProps) {
             <p className="text-sm text-muted-foreground">Nessun appuntamento in programma</p>
           </div>
         ) : (
-          upcoming.map(appt => <AppointmentCard key={appt.id} appt={appt} />)
+          upcoming.map((appt: any) => <AppointmentCard key={appt.id} appt={appt} />)
         )}
       </div>
 
@@ -93,7 +95,7 @@ export default async function PortalAppointmentsPage({ params }: PageProps) {
       {!!past?.length && (
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{t('past')}</h2>
-          {past.map(appt => <AppointmentCard key={appt.id} appt={appt} />)}
+          {past.map((appt: any) => <AppointmentCard key={appt.id} appt={appt} />)}
         </div>
       )}
     </div>

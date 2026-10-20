@@ -4,15 +4,17 @@ import { sessionActionSchema } from '@/lib/training/schemas'
 import { withSignedExerciseImages } from '@/lib/training/media'
 
 const headers = { 'Cache-Control': 'no-store' }
-async function context() {
+async function context(clientId?: string) {
   const supabase = await createClient() as any
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const { data: profile } = await supabase.from('profiles').select('role, active, tenant_id').eq('id', user.id).single()
   if (profile?.role !== 'CLIENT' || !profile.active) return null
   const admin = createAdminClient() as any
-  const { data: client } = await admin.from('clients').select('id, tenant_id, full_name')
-    .eq('profile_id', user.id).eq('tenant_id', profile.tenant_id).eq('active', true).single()
+  let clientQuery = admin.from('clients').select('id, tenant_id, full_name')
+    .eq('profile_id', user.id).eq('active', true)
+  if (clientId) clientQuery = clientQuery.eq('id', clientId)
+  const { data: client } = await clientQuery.order('created_at').limit(1).maybeSingle()
   if (!client) return null
   const { data: tenant } = await admin.from('tenants').select('name, logo_url, brand_primary, status')
     .eq('id', client.tenant_id).single()
@@ -20,8 +22,8 @@ async function context() {
   return { user, client, tenant, admin }
 }
 
-export async function GET() {
-  const ctx = await context()
+export async function GET(request: NextRequest) {
+  const ctx = await context(request.nextUrl.searchParams.get('clientId') ?? undefined)
   if (!ctx) return NextResponse.json({ error: 'Accesso non disponibile' }, { status: 403, headers })
   const { client, tenant, admin } = ctx
   const scoped = (table: string) => admin.from(table).select('*').eq('client_id', client.id).eq('tenant_id', client.tenant_id)
@@ -42,13 +44,14 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const ctx = await context()
+  const body = await request.json().catch(() => null)
+  const ctx = await context(typeof body?.clientId === 'string' ? body.clientId : undefined)
   if (!ctx) return NextResponse.json({ error: 'Accesso non disponibile' }, { status: 403, headers })
-  const parsed = sessionActionSchema.safeParse(await request.json().catch(() => null))
+  const parsed = sessionActionSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Dati sessione non validi' }, { status: 422, headers })
   const action = parsed.data
-  const { data, error } = await ctx.admin.rpc('portal_training_session_write', {
-    p_user: ctx.user.id, p_action: action.action, p_plan_id: action.action === 'start' ? action.planId ?? null : null,
+  const { data, error } = await ctx.admin.rpc('portal_training_session_write_for_client', {
+    p_user: ctx.user.id, p_client: ctx.client.id, p_action: action.action, p_plan_id: action.action === 'start' ? action.planId ?? null : null,
     ...(action.action === 'start' ? {} : { p_id: action.sessionId, p_version: action.version,
       p_entries: action.entries, p_mutation: action.mutationId, p_notes: action.notes }),
   })

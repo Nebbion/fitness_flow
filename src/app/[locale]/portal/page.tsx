@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { getPortalClientMemberships } from '@/lib/portal/client-memberships'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/index'
 import { Calendar, Dumbbell, FileText, TrendingUp, Utensils } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
@@ -18,14 +19,11 @@ export default async function PortalHomePage({ params }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/auth/login`)
 
-  // Recupera il record cliente
-  const { data: client } = await supabase
-    .from('clients')
-    .select('id, full_name, tenants(profession)')
-    .eq('profile_id', user.id)
-    .single()
-
-  if (!client) redirect(`/${locale}/auth/login`)
+  const memberships = await getPortalClientMemberships(user.id)
+  if (!memberships.length) redirect(`/${locale}/auth/login`)
+  const clientIds = memberships.map(item => item.id)
+  const client = memberships[0]
+  const admin = createAdminClient() as any
 
   // Prossimo appuntamento + statistiche
   const [
@@ -34,44 +32,45 @@ export default async function PortalHomePage({ params }: PageProps) {
     { count: totalDocuments },
     { data: lastProgress },
   ] = await Promise.all([
-    supabase
+    admin
       .from('appointments')
       .select('id, start_at, end_at, status, services(name), profiles!appointments_staff_id_fkey(full_name)')
-      .eq('client_id', client.id)
+      .in('client_id', clientIds)
       .gte('start_at', new Date().toISOString())
       .neq('status', 'cancelled')
       .order('start_at', { ascending: true })
       .limit(1)
-      .single(),
+      .maybeSingle(),
 
-    supabase
+    admin
       .from('appointments')
       .select('*', { count: 'exact', head: true })
-      .eq('client_id', client.id)
+      .in('client_id', clientIds)
       .eq('status', 'completed'),
 
-    supabase
+    admin
       .from('documents')
       .select('*', { count: 'exact', head: true })
-      .eq('client_id', client.id)
+      .in('client_id', clientIds)
       .eq('visible_to_client', true),
 
-    supabase
+    admin
       .from('progress_entries')
       .select('weight_kg, body_fat_pct, recorded_at')
-      .eq('client_id', client.id)
+      .in('client_id', clientIds)
       .order('recorded_at', { ascending: false })
       .limit(1)
-      .single(),
+      .maybeSingle(),
   ])
 
   const firstName = client.full_name?.split(' ')[0] ?? ''
-  const tenant = Array.isArray(client.tenants) ? client.tenants[0] : client.tenants
-  const supportsTraining = ['personal_trainer', 'nutritionist'].includes(tenant?.profession ?? '')
+  const tenant = client.tenants
+  const supportsTraining = memberships.some(item => ['personal_trainer', 'nutritionist'].includes(item.tenants?.profession ?? ''))
+  const supportsNutrition = memberships.some(item => item.tenants?.profession === 'nutritionist')
   const quickLinks = [
     { href: `/${locale}/portal/appointments`, icon: Calendar, label: t('appointments.title'), color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/20' },
     ...(supportsTraining ? [{ href: `/${locale}/portal/training`, icon: Dumbbell, label: 'La mia scheda', color: 'text-red-600 bg-red-50 dark:bg-red-950/20' }] : []),
-    ...(tenant?.profession === 'nutritionist' ? [{ href: `/${locale}/portal/nutrition`, icon: Utensils, label: 'La mia alimentazione', color: 'text-green-700 bg-green-50 dark:bg-green-950/20' }] : []),
+    ...(supportsNutrition ? [{ href: `/${locale}/portal/nutrition`, icon: Utensils, label: 'La mia alimentazione', color: 'text-green-700 bg-green-50 dark:bg-green-950/20' }] : []),
     { href: `/${locale}/portal/documents`, icon: FileText, label: t('documents.title'), color: 'text-cyan-700 bg-cyan-50 dark:bg-cyan-950/20' },
     { href: `/${locale}/portal/progress`, icon: TrendingUp, label: t('progress.title'), color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/20' },
   ]
