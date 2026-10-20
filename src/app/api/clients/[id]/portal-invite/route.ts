@@ -76,6 +76,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     const passwordSetupRedirectTo = `${appUrl}/${locale}/auth/reset-password?mode=invite`
     const emailMetadata = {
       full_name: client.full_name,
+      preferred_language: locale,
       tenant_name: tenant.name,
       professional_name: profile.full_name ?? tenant.name,
       brand_primary: tenant.brand_primary ?? '#2563EB',
@@ -145,7 +146,6 @@ export async function POST(request: NextRequest, { params }: Params) {
         client.email,
         {
           data: {
-            preferred_language: locale,
             portal_password_set: false,
             ...emailMetadata,
           },

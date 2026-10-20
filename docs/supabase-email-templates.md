@@ -4,7 +4,7 @@ Le email di autenticazione sono inviate da Supabase tramite SMTP Resend. I dati 
 
 ## Attivazione
 
-1. Pubblicare la versione dell'app che contiene la route `/auth/confirm`.
+1. Pubblicare la versione dell'app che contiene la route `/{lingua}/auth/confirm`.
 2. In Supabase, impostare `https://fitness.nebbion.it` come Site URL e consentire `https://fitness.nebbion.it/**` nei Redirect URLs.
 3. In **Authentication > Email Templates > Invite user**, incollare il contenuto di `supabase-invite-email-template.html`.
 4. In **Authentication > Email Templates > Magic Link**, incollare il contenuto di `supabase-magic-link-email-template.html`.
