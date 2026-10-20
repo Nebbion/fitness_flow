@@ -36,10 +36,13 @@ export function ResetPasswordForm({ locale, isInvitationSetup = false }: { local
 
   async function onSubmit(values: ResetPasswordInput) {
     setLoading(true)
-    setRequestError('')
+      setRequestError('')
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.updateUser({ password: values.password })
+      const { error } = await supabase.auth.updateUser({
+        password: values.password,
+        data: { portal_password_set: true },
+      })
       if (error) throw error
       if (isInvitationSetup) {
         router.replace(`/${locale}/portal`)

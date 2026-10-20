@@ -76,6 +76,9 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     if (existingAuthUser) {
       clientUserId = existingAuthUser.id
+      // Accounts created before this flow have no marker, so guide them through
+      // password creation once instead of silently sending them to the portal.
+      const needsPasswordSetup = existingAuthUser.user_metadata?.portal_password_set !== true
       const { data: existingProfileData } = await admin
         .from('profiles')
         .select('tenant_id, role')
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: client.email,
         options: {
-          emailRedirectTo: portalRedirectTo,
+          emailRedirectTo: needsPasswordSetup ? passwordSetupRedirectTo : portalRedirectTo,
           shouldCreateUser: false,
         },
       })
@@ -124,6 +127,7 @@ export async function POST(request: NextRequest, { params }: Params) {
           data: {
             full_name: client.full_name,
             preferred_language: locale,
+            portal_password_set: false,
           },
           redirectTo: passwordSetupRedirectTo,
         }
