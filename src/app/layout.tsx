@@ -1,15 +1,19 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-})
+import { PwaRegistration } from '@/components/pwa/pwa-registration'
 
 export const metadata: Metadata = {
   title: 'FitnessFlow',
   description: 'Piattaforma SaaS per professionisti del fitness e del benessere',
+  manifest: '/manifest.webmanifest',
+  applicationName: 'FitnessFlow',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'FitnessFlow' },
+  other: { 'apple-mobile-web-app-capable': 'yes' },
+  formatDetection: { telephone: false },
+  icons: {
+    icon: [{ url: '/icons/fitnessflow-192.png', sizes: '192x192', type: 'image/png' }],
+    apple: [{ url: '/icons/fitnessflow-192.png', sizes: '192x192', type: 'image/png' }],
+  },
 }
 
 export default function RootLayout({
@@ -19,7 +23,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="it" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>{children}</body>
+      <body className="font-sans antialiased">
+        {children}
+        <PwaRegistration />
+      </body>
     </html>
   )
 }

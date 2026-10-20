@@ -7,11 +7,13 @@ export async function getTrainingProfessional() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id, role')
+    .select('tenant_id, role, tenants(profession)')
     .eq('id', user.id)
     .single()
 
+  const tenant = Array.isArray(profile?.tenants) ? profile.tenants[0] : profile?.tenants
   if (!profile?.tenant_id || !['TENANT_ADMIN', 'STAFF'].includes(profile.role)) return null
+  if (!['personal_trainer', 'nutritionist'].includes(tenant?.profession ?? '')) return null
 
   return { user, profile, admin: createAdminClient() as any }
 }

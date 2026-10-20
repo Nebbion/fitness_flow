@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Calendar, Dumbbell, FileText, TrendingUp, User } from 'lucide-react'
+import { Calendar, Dumbbell, FileText, TrendingUp, User, Utensils } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ClientOverview } from './client-overview'
 import { ClientAppointmentsList } from './client-appointments-list'
 import { ClientDocumentsList } from './client-documents-list'
 import { ClientProgressPanel } from './client-progress-panel'
 import { TrainingPlanPanel } from '@/components/training/training-plan-panel'
+import { NutritionPlanPanel } from '@/components/nutrition/nutrition-plan-panel'
 import type { CustomFieldDefinition, UserRole } from '@/types'
 
 interface ClientTabsProps {
@@ -17,6 +18,9 @@ interface ClientTabsProps {
   role: UserRole
   tenantId: string
   userId: string
+  profession: string
+  tenant: { name: string; logo_url?: string | null }
+  initialTab?: string
   customFieldDefs: CustomFieldDefinition[]
   counts: {
     appointments: number
@@ -31,18 +35,25 @@ export function ClientTabs({
   role,
   tenantId,
   userId,
+  profession,
+  tenant,
+  initialTab,
   customFieldDefs,
   counts,
 }: ClientTabsProps) {
   const t = useTranslations('clients.detail')
-  const [activeTab, setActiveTab] = useState('overview')
+  const supportsTraining = ['personal_trainer', 'nutritionist'].includes(profession)
+  const supportsNutrition = profession === 'nutritionist'
+  const allowedInitialTabs = ['overview', 'appointments', 'documents', 'progress', supportsTraining && 'training', supportsNutrition && 'nutrition'].filter(Boolean)
+  const [activeTab, setActiveTab] = useState(allowedInitialTabs.includes(initialTab ?? '') ? initialTab! : 'overview')
 
   const tabs = [
     { key: 'overview',      label: t('overview'),      icon: User,      count: null },
     { key: 'appointments',  label: t('appointments'),  icon: Calendar,  count: counts.appointments },
     { key: 'documents',     label: t('documents'),     icon: FileText,  count: counts.documents },
     { key: 'progress',      label: t('progress'),      icon: TrendingUp,count: counts.progress },
-    { key: 'training',      label: 'Allenamento',      icon: Dumbbell,  count: null },
+    ...(supportsTraining ? [{ key: 'training', label: 'Allenamento', icon: Dumbbell, count: null }] : []),
+    ...(supportsNutrition ? [{ key: 'nutrition', label: 'Alimentazione', icon: Utensils, count: null }] : []),
   ]
 
   return (
@@ -113,6 +124,7 @@ export function ClientTabs({
           />
         )}
         {activeTab === 'training' && <TrainingPlanPanel clientId={client.id} locale={locale} />}
+        {activeTab === 'nutrition' && <NutritionPlanPanel clientId={client.id} clientName={client.full_name} tenant={tenant} />}
       </div>
     </div>
   )

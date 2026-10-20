@@ -1,0 +1,16 @@
+<div style="margin:0;padding:32px 16px;background:#f1f5f9;font-family:Arial,sans-serif;color:#172033;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.12);">
+    <div style="padding:28px 32px;background:{{ .Data.brand_primary }};">
+      <p style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">{{ .Data.tenant_name }}</p>
+    </div>
+    <div style="padding:32px;">
+      <h1 style="margin:0 0 16px;font-size:25px;line-height:1.25;color:#172033;">Benvenuto nel tuo portale personale</h1>
+      <p style="margin:0 0 16px;font-size:16px;line-height:1.6;">Ciao {{ .Data.full_name }},</p>
+      <p style="margin:0 0 16px;font-size:16px;line-height:1.6;"><strong>{{ .Data.professional_name }}</strong> ti da il benvenuto nel proprio portale personale.</p>
+      <p style="margin:0 0 24px;font-size:16px;line-height:1.6;">Qui potrai consultare e gestire appuntamenti, schede, piani, documenti e progressi condivisi con te.</p>
+      <a href="{{ .SiteURL }}/{{ .Data.preferred_language }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite" style="display:inline-block;padding:14px 22px;border-radius:8px;background:{{ .Data.brand_accent }};color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;">Crea la password e accedi</a>
+      <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#64748b;">Il link e personale e ha una durata limitata. Se non hai richiesto questo invito, puoi ignorare questa email.</p>
+    </div>
+    <div style="padding:18px 32px;background:#f8fafc;border-top:4px solid {{ .Data.brand_accent }};color:#64748b;font-size:12px;">{{ .Data.tenant_name }} tramite FitnessFlow</div>
+  </div>
+</div>

@@ -16,6 +16,7 @@ const PUBLIC_PATHS = [
   '/auth/login',
   '/auth/register',
   '/auth/callback',
+  '/auth/confirm',
   '/auth/error',
   '/auth/forgot-password',
   '/auth/reset-password',
@@ -33,7 +34,8 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
-    pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff2?)$/)
+    pathname === '/offline.html' ||
+    pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff2?|webmanifest)$/)
   ) {
     return NextResponse.next()
   }
@@ -155,6 +157,6 @@ function getRoleDefaultPath(role: string, locale: string): string {
 export const config = {
   matcher: [
     // Gestisci tutte le route tranne i file statici Next.js interni
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|offline.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)',
   ],
 }

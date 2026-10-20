@@ -6,7 +6,7 @@
 2. Configura serie e ripetizioni predefinite, istruzioni e fino a 6 immagini.
 3. Nella scheda del cliente seleziona l'esercizio dalla libreria; nome, istruzioni e immagini vengono copiati nella scheda.
 4. Quando il cliente avvia una sessione, la scheda completa viene salvata in `plan_snapshot`. Modifiche successive alla libreria non alterano sessioni o schede già salvate.
-5. Dal link cliente la scheda è consultabile prima dell'avvio e può essere stampata in formato A4.
+5. La scheda è disponibile sia dal link personale senza account sia da **Portale cliente > Scheda** e può essere stampata in formato A4.
 
 Gli esercizi della libreria mantengono un ID stabile: selezionare lo stesso esercizio in schede successive permette di confrontare correttamente i carichi nei progressi.
 

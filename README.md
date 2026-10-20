@@ -14,6 +14,12 @@ Piattaforma SaaS multi-tenant per professionisti del fitness e del benessere.
 - **i18n**: next-intl (Italiano + Inglese)
 - **Deploy**: Vercel
 
+## Documentazione
+
+- [Panoramica tecnica e configurazione email/WhatsApp](docs/panoramica-tecnica.md)
+- [Promemoria WhatsApp: guida operativa dettagliata](docs/whatsapp-reminders.md)
+- [PWA area cliente: accesso, installazione e verifica](docs/pwa-cliente.md)
+
 ---
 
 ## Setup Iniziale
@@ -118,10 +124,17 @@ Configurazione e garanzie di privacy della dashboard: [`docs/training-progress.m
 ### WhatsApp
 | Variabile | Descrizione |
 |-----------|-------------|
-| `WHATSAPP_API_URL` | URL Meta Graph API |
-| `WHATSAPP_PHONE_NUMBER_ID` | ID numero WhatsApp Business |
-| `WHATSAPP_ACCESS_TOKEN` | Token di accesso permanente |
+| `NEXT_PUBLIC_META_APP_ID` | App ID pubblico per Embedded Signup |
+| `NEXT_PUBLIC_META_WHATSAPP_CONFIG_ID` | Configuration ID pubblico per Embedded Signup |
+| `META_APP_SECRET` | Segreto Meta per OAuth e firma webhook |
+| `META_GRAPH_API_VERSION` | Versione Graph API; default `v21.0` |
 | `WHATSAPP_VERIFY_TOKEN` | Token per verifica webhook |
+| `WHATSAPP_TOKEN_ENCRYPTION_KEY` | Chiave base64url da 32 byte per cifrare i token dei professionisti |
+| `REMINDER_SCHEDULER_SECRET` | Bearer secret del job promemoria |
+| `WHATSAPP_API_URL` | URL Meta Graph API opzionale |
+| `WHATSAPP_APPOINTMENT_CONFIRMATION_TEMPLATE` | Nome template conferma opzionale |
+
+`WHATSAPP_PHONE_NUMBER_ID` e `WHATSAPP_ACCESS_TOKEN` sono variabili legacy e non vengono usate dal flusso corrente. Vedere la [guida tecnica](docs/panoramica-tecnica.md) per la configurazione completa.
 
 ## Bootstrap Super Admin
 
@@ -157,6 +170,10 @@ Le migrations si trovano in `supabase/migrations/`:
 | `010_reminders_training.sql` | Promemoria WhatsApp e area allenamento con link sicuro |
 | `011_training_progress_ai.sql` | Note sessione, dashboard progressi e cache AI server-only |
 | `012_training_exercise_media.sql` | Libreria esercizi professionista e immagini private |
+| `013_nutrition_plans.sql` | Piani alimentari strutturati, calorie e macronutrienti |
+| `014_training_weight_history.sql` | Allenamenti dal portale cliente, storico variazioni carichi e kg consigliati nella libreria |
+| `015_training_isometry.sql` | Tempo facoltativo di isometria nella libreria esercizi |
+| `016_multiple_client_plans.sql` | Schede multiple, storico piani alimentari, periodo e rilevazioni BIA iniziali/finali |
 
 ---
 

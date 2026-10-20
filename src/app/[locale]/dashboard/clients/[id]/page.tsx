@@ -11,6 +11,7 @@ import { normalizeCustomFieldDefinition } from '@/lib/custom-fields'
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>
+  searchParams: Promise<{ tab?: string }>
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; id: string }> }): Promise<Metadata> {
@@ -20,8 +21,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: data?.full_name ?? 'Cliente' }
 }
 
-export default async function ClientDetailPage({ params }: PageProps) {
+export default async function ClientDetailPage({ params, searchParams }: PageProps) {
   const { locale, id } = await params
+  const { tab } = await searchParams
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -34,6 +36,8 @@ export default async function ClientDetailPage({ params }: PageProps) {
     .single()
 
   if (!profile?.tenant_id) redirect(`/${locale}/auth/onboarding`)
+
+  const { data: tenant } = await supabase.from('tenants').select('name, logo_url, profession').eq('id', profile.tenant_id).single()
 
   // Recupera il cliente con relazioni
   const { data: client, error } = await supabase
@@ -161,6 +165,9 @@ export default async function ClientDetailPage({ params }: PageProps) {
         role={profile.role as any}
         tenantId={profile.tenant_id}
         userId={user.id}
+        profession={tenant?.profession ?? 'other'}
+        tenant={{ name: tenant?.name ?? 'FitnessFlow', logo_url: tenant?.logo_url }}
+        initialTab={tab}
         customFieldDefs={(customFieldDefs ?? []).map(normalizeCustomFieldDefinition)}
         counts={{
           appointments: appointmentsCount ?? 0,

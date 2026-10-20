@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { DashboardHeader } from '@/components/layout/dashboard-header'
+import { SessionTimeout } from '@/components/auth/session-timeout'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -45,6 +46,12 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      <SessionTimeout
+        userId={user.id}
+        sessionStartedAt={user.last_sign_in_at ?? user.id}
+        loginPath={`/${locale}/auth/login`}
+        locale={locale}
+      />
       {/* Sidebar */}
       <Sidebar
         locale={locale}
