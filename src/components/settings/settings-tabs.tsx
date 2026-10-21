@@ -2,9 +2,9 @@
 
 import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, Plus, Trash2, Building2, Bell, Sliders, MessageCircle, ImageIcon, Upload, X } from 'lucide-react'
+import { Loader2, Plus, Trash2, Building2, Bell, Sliders, MessageCircle, CalendarDays, ImageIcon, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/index'
 import { createClient } from '@/lib/supabase/client'
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { getEnabledModules, type PracticeModule } from '@/lib/practice-modules'
 import type { CustomFieldDefinition } from '@/types'
 import { WhatsAppConnectionPanel } from './whatsapp-connection-panel'
+import { GoogleCalendarConnectionPanel } from './google-calendar-connection-panel'
 
 interface SettingsTabsProps {
   locale: string
@@ -27,6 +28,7 @@ interface SettingsTabsProps {
 
 const TABS = [
   { key: 'company',      label: 'Azienda',     icon: Building2 },
+  { key: 'calendar',     label: 'Calendario',  icon: CalendarDays },
   { key: 'whatsapp',     label: 'WhatsApp',    icon: MessageCircle },
   { key: 'notifications',label: 'Notifiche',   icon: Bell },
   { key: 'customFields', label: 'Campi custom',icon: Sliders },
@@ -43,9 +45,14 @@ const PROFESSION_LABELS: Record<string, string> = {
 
 export function SettingsTabs({ locale, role, tenant, adminAccount, customFields, notifRules }: SettingsTabsProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const logoInputRef = useRef<HTMLInputElement | null>(null)
   const isAdmin = role === 'TENANT_ADMIN'
-  const [activeTab, setActiveTab] = useState(isAdmin ? 'company' : 'whatsapp')
+  const requestedTab = searchParams.get('tab')
+  const allowedTabs = isAdmin ? TABS.map(tab => tab.key) : ['calendar', 'whatsapp']
+  const [activeTab, setActiveTab] = useState(
+    requestedTab && allowedTabs.includes(requestedTab) ? requestedTab : (isAdmin ? 'company' : 'calendar')
+  )
   const [saving, setSaving] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
 
@@ -156,7 +163,7 @@ export function SettingsTabs({ locale, role, tenant, adminAccount, customFields,
     <div className="space-y-4">
       {/* Tab bar */}
       <div className="flex border-b border-border">
-        {TABS.filter(tab => isAdmin || tab.key === 'whatsapp').map(tab => {
+        {TABS.filter(tab => isAdmin || ['calendar', 'whatsapp'].includes(tab.key)).map(tab => {
           const Icon = tab.icon
           return (
             <button
@@ -356,6 +363,8 @@ export function SettingsTabs({ locale, role, tenant, adminAccount, customFields,
           </CardContent>
         </Card>
       )}
+
+      {activeTab === 'calendar' && <GoogleCalendarConnectionPanel locale={locale} />}
 
       {/* Notifications */}
       {activeTab === 'whatsapp' && <WhatsAppConnectionPanel />}

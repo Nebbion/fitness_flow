@@ -452,6 +452,69 @@ export type Database = {
           },
         ]
       }
+      google_calendar_connections: {
+        Row: {
+          calendar_id: string
+          calendar_name: string | null
+          calendar_timezone: string | null
+          connected_at: string
+          google_account_email: string | null
+          granted_scopes: string[]
+          id: string
+          last_error: string | null
+          professional_id: string
+          refresh_token_encrypted: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          calendar_id?: string
+          calendar_name?: string | null
+          calendar_timezone?: string | null
+          connected_at?: string
+          google_account_email?: string | null
+          granted_scopes?: string[]
+          id?: string
+          last_error?: string | null
+          professional_id: string
+          refresh_token_encrypted: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          calendar_id?: string
+          calendar_name?: string | null
+          calendar_timezone?: string | null
+          connected_at?: string
+          google_account_email?: string | null
+          granted_scopes?: string[]
+          id?: string
+          last_error?: string | null
+          professional_id?: string
+          refresh_token_encrypted?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_calendar_connections_professional_id_tenant_id_fkey"
+            columns: ["professional_id", "tenant_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id", "tenant_id"]
+          },
+          {
+            foreignKeyName: "google_calendar_connections_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_rules: {
         Row: {
           active: boolean

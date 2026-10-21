@@ -136,6 +136,16 @@ Configurazione e garanzie di privacy della dashboard: [`docs/training-progress.m
 
 `WHATSAPP_PHONE_NUMBER_ID` e `WHATSAPP_ACCESS_TOKEN` sono variabili legacy e non vengono usate dal flusso corrente. Vedere la [guida tecnica](docs/panoramica-tecnica.md) per la configurazione completa.
 
+### Google Calendar
+| Variabile | Descrizione |
+|-----------|-------------|
+| `GOOGLE_CALENDAR_CLIENT_ID` | Client ID OAuth 2.0 della web application Google Cloud |
+| `GOOGLE_CALENDAR_CLIENT_SECRET` | Client secret OAuth, esclusivamente server-side |
+| `GOOGLE_CALENDAR_REDIRECT_URI` | Callback OAuth; se assente usa `NEXT_PUBLIC_APP_URL/api/integrations/google-calendar/callback` |
+| `GOOGLE_TOKEN_ENCRYPTION_KEY` | Chiave base64url da 32 byte per cifrare i refresh token |
+
+Configurazione e collaudo: [`docs/google-calendar.md`](docs/google-calendar.md).
+
 ## Bootstrap Super Admin
 
 Il ruolo `SUPER_ADMIN` gestisce i professionisti/tenant dalla sezione `/admin`.
@@ -174,6 +184,7 @@ Le migrations si trovano in `supabase/migrations/`:
 | `014_training_weight_history.sql` | Allenamenti dal portale cliente, storico variazioni carichi e kg consigliati nella libreria |
 | `015_training_isometry.sql` | Tempo facoltativo di isometria nella libreria esercizi |
 | `016_multiple_client_plans.sql` | Schede multiple, storico piani alimentari, periodo e rilevazioni BIA iniziali/finali |
+| `018_google_calendar_connections.sql` | Connessioni OAuth Google Calendar per professionista |
 
 ---
 
