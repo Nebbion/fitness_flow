@@ -8,6 +8,7 @@ import { Activity, CalendarDays, Dumbbell, ClipboardList, History, LogOut, Share
 import { SessionTimeout } from '@/components/auth/session-timeout'
 import { PwaInstallHelp } from '@/components/pwa/pwa-install-help'
 import { hasPracticeModule } from '@/lib/practice-modules'
+import { NavigationFeedback } from '@/components/layout/navigation-feedback'
 
 interface PortalLayoutProps {
   children: React.ReactNode
@@ -53,6 +54,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
 
   return (
     <div className="min-h-screen bg-background">
+      <NavigationFeedback />
       <SessionTimeout
         userId={user.id}
         sessionStartedAt={user.last_sign_in_at ?? user.id}

@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/layout/sidebar'
 import { DashboardHeader } from '@/components/layout/dashboard-header'
 import { SessionTimeout } from '@/components/auth/session-timeout'
 import { getEnabledModules } from '@/lib/practice-modules'
+import { NavigationFeedback } from '@/components/layout/navigation-feedback'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -47,6 +48,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      <NavigationFeedback />
       <SessionTimeout
         userId={user.id}
         sessionStartedAt={user.last_sign_in_at ?? user.id}

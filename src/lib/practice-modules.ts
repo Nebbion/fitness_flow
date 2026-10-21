@@ -22,3 +22,11 @@ export function getEnabledModules(tenant?: { profession?: string | null; enabled
 export function hasPracticeModule(tenant: { profession?: string | null; enabled_modules?: unknown } | null | undefined, module: PracticeModule) {
   return getEnabledModules(tenant).includes(module)
 }
+
+export function modulesForServiceName(name: string): PracticeModule[] {
+  const normalized = name.trim().toLocaleLowerCase('it-IT')
+  const modules: PracticeModule[] = []
+  if (/\b(allenamento|workout|palestra)\b/.test(normalized) || /scheda\s+(allenamento|palestra)/.test(normalized)) modules.push('training')
+  if (/\b(alimentazione|alimentare|nutrizione|nutrizionale)\b/.test(normalized)) modules.push('nutrition')
+  return modules
+}

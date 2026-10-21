@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceSchema } from '@/schemas'
+import { getEnabledModules, modulesForServiceName } from '@/lib/practice-modules'
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -30,6 +31,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       .select().single()
 
     if (error) throw error
+    if (data?.active !== false) {
+      const modules = modulesForServiceName(data.name)
+      if (modules.length) {
+        const { data: tenant } = await (supabase as any).from('tenants').select('profession, enabled_modules').eq('id', profile.tenant_id).single()
+        await (supabase as any).from('tenants').update({ enabled_modules: [...new Set([...getEnabledModules(tenant), ...modules])] }).eq('id', profile.tenant_id)
+      }
+    }
     return NextResponse.json({ data })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

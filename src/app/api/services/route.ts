@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceSchema } from '@/schemas'
+import { getEnabledModules, modulesForServiceName } from '@/lib/practice-modules'
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,6 +53,11 @@ export async function POST(request: NextRequest) {
       .select().single()
 
     if (error) throw error
+    const modules = modulesForServiceName(parsed.data.name)
+    if (modules.length) {
+      const { data: tenant } = await (supabase as any).from('tenants').select('profession, enabled_modules').eq('id', profile.tenant_id).single()
+      await (supabase as any).from('tenants').update({ enabled_modules: [...new Set([...getEnabledModules(tenant), ...modules])] }).eq('id', profile.tenant_id)
+    }
     return NextResponse.json({ data }, { status: 201 })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
