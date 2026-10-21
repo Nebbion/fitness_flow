@@ -55,8 +55,14 @@ export async function POST(request: NextRequest) {
     ...(action.action === 'start' ? {} : { p_id: action.sessionId, p_version: action.version,
       p_entries: action.entries, p_mutation: action.mutationId, p_notes: action.notes }),
   })
-  if (error) return NextResponse.json({ error: error.message.includes('version_conflict')
-    ? 'La sessione è cambiata in un’altra scheda. Ricarica prima di continuare.' : 'Impossibile salvare la sessione' },
-    { status: error.message.includes('version_conflict') ? 409 : 422, headers })
+  if (error) {
+    const missingProcedure = error.code === 'PGRST202' || error.message.includes('portal_training_session_write_for_client')
+    const message = error.message.includes('version_conflict')
+      ? 'La sessione è cambiata in un’altra scheda. Ricarica prima di continuare.'
+      : missingProcedure
+        ? 'Aggiornamento del database necessario. Riprova tra qualche istante.'
+        : 'Impossibile salvare la sessione'
+    return NextResponse.json({ error: message }, { status: error.message.includes('version_conflict') ? 409 : 422, headers })
+  }
   return NextResponse.json({ session: { ...data, plan_snapshot: await withSignedExerciseImages(ctx.admin, data.plan_snapshot) } }, { headers })
 }
