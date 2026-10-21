@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Utensils } from 'lucide-react'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { Card, CardContent } from '@/components/ui/index'
+import { hasPracticeModule } from '@/lib/practice-modules'
 
 interface PageProps { params: Promise<{ locale: string }> }
 
@@ -16,8 +17,8 @@ export default async function NutritionDashboardPage({ params }: PageProps) {
   if (!profile?.tenant_id || !['TENANT_ADMIN', 'STAFF'].includes(profile.role)) redirect(`/${locale}/dashboard`)
 
   const admin = createAdminClient() as any
-  const { data: tenant } = await admin.from('tenants').select('profession').eq('id', profile.tenant_id).single()
-  if (tenant?.profession !== 'nutritionist') redirect(`/${locale}/dashboard`)
+  const { data: tenant } = await admin.from('tenants').select('profession, enabled_modules').eq('id', profile.tenant_id).single()
+  if (!hasPracticeModule(tenant, 'nutrition')) redirect(`/${locale}/dashboard`)
 
   let clientsQuery = admin.from('clients').select('id, full_name, email, assigned_staff_id, nutrition_plans(title, updated_at)')
     .eq('tenant_id', profile.tenant_id).eq('active', true).order('full_name')

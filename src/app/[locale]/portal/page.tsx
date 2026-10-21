@@ -5,6 +5,7 @@ import { getPortalClientMemberships } from '@/lib/portal/client-memberships'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/index'
 import { Calendar, Dumbbell, FileText, TrendingUp, Utensils } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
+import { hasPracticeModule } from '@/lib/practice-modules'
 
 interface PageProps {
   params: Promise<{ locale: string }>
@@ -65,8 +66,8 @@ export default async function PortalHomePage({ params }: PageProps) {
 
   const firstName = client.full_name?.split(' ')[0] ?? ''
   const tenant = client.tenants
-  const supportsTraining = memberships.some(item => ['personal_trainer', 'nutritionist'].includes(item.tenants?.profession ?? ''))
-  const supportsNutrition = memberships.some(item => item.tenants?.profession === 'nutritionist')
+  const supportsTraining = memberships.some(item => hasPracticeModule(item.tenants, 'training'))
+  const supportsNutrition = memberships.some(item => hasPracticeModule(item.tenants, 'nutrition'))
   const quickLinks = [
     { href: `/${locale}/portal/appointments`, icon: Calendar, label: t('appointments.title'), color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/20' },
     ...(supportsTraining ? [{ href: `/${locale}/portal/training`, icon: Dumbbell, label: 'La mia scheda', color: 'text-red-600 bg-red-50 dark:bg-red-950/20' }] : []),

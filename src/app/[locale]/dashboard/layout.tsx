@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { DashboardHeader } from '@/components/layout/dashboard-header'
 import { SessionTimeout } from '@/components/auth/session-timeout'
+import { getEnabledModules } from '@/lib/practice-modules'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -26,7 +27,7 @@ export default async function DashboardLayout({
       id, role, full_name, avatar_url,
       tenants (
         id, name, slug, logo_url, brand_primary, brand_accent,
-        profession, plan, status, max_clients
+        profession, enabled_modules, plan, status, max_clients
       )
     `)
     .eq('id', user.id)
@@ -57,6 +58,7 @@ export default async function DashboardLayout({
         locale={locale}
         role={profile.role as any}
         tenant={tenant as any}
+        enabledModules={getEnabledModules(tenant as any)}
         user={{
           id: profile.id,
           full_name: profile.full_name,

@@ -12,6 +12,7 @@ import { TrainingPlanPanel } from '@/components/training/training-plan-panel'
 import { NutritionPlanPanel } from '@/components/nutrition/nutrition-plan-panel'
 import { SharedClientDataPanel } from './shared-client-data-panel'
 import type { CustomFieldDefinition, UserRole } from '@/types'
+import type { PracticeModule } from '@/lib/practice-modules'
 
 interface ClientTabsProps {
   client: any
@@ -20,6 +21,7 @@ interface ClientTabsProps {
   tenantId: string
   userId: string
   profession: string
+  enabledModules: PracticeModule[]
   tenant: { name: string; logo_url?: string | null }
   initialTab?: string
   customFieldDefs: CustomFieldDefinition[]
@@ -37,14 +39,15 @@ export function ClientTabs({
   tenantId,
   userId,
   profession,
+  enabledModules,
   tenant,
   initialTab,
   customFieldDefs,
   counts,
 }: ClientTabsProps) {
   const t = useTranslations('clients.detail')
-  const supportsTraining = ['personal_trainer', 'nutritionist'].includes(profession)
-  const supportsNutrition = profession === 'nutritionist'
+  const supportsTraining = enabledModules.includes('training')
+  const supportsNutrition = enabledModules.includes('nutrition')
   const allowedInitialTabs = ['overview', 'appointments', 'documents', 'progress', 'shared', supportsTraining && 'training', supportsNutrition && 'nutrition'].filter(Boolean)
   const [activeTab, setActiveTab] = useState(allowedInitialTabs.includes(initialTab ?? '') ? initialTab! : 'overview')
 

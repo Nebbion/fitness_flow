@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { nutritionPlanSchema } from '@/lib/nutrition/schemas'
-import { getTrainingProfessionalContext } from '@/lib/training/professional-access'
+import { getProfessionalClientContext } from '@/lib/training/professional-access'
+import { hasPracticeModule } from '@/lib/practice-modules'
 
 interface Params { params: Promise<{ id: string }> }
 
 export async function GET(_request: NextRequest, { params }: Params) {
   const { id } = await params
-  const ctx = await getTrainingProfessionalContext(id)
+  const ctx = await getProfessionalClientContext(id)
   if (!ctx) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
 
-  const { data: tenant } = await ctx.admin.from('tenants').select('profession').eq('id', ctx.profile.tenant_id).single()
-  if (tenant?.profession !== 'nutritionist') {
-    return NextResponse.json({ error: 'Funzione disponibile per i nutrizionisti' }, { status: 403 })
+  const { data: tenant } = await ctx.admin.from('tenants').select('profession, enabled_modules').eq('id', ctx.profile.tenant_id).single()
+  if (!hasPracticeModule(tenant, 'nutrition')) {
+    return NextResponse.json({ error: 'Attiva il modulo Piani alimentari nelle impostazioni dello studio' }, { status: 403 })
   }
 
   const { data: plans, error } = await ctx.admin.from('nutrition_plans').select('*')
@@ -22,12 +23,12 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
 export async function PUT(request: NextRequest, { params }: Params) {
   const { id } = await params
-  const ctx = await getTrainingProfessionalContext(id)
+  const ctx = await getProfessionalClientContext(id)
   if (!ctx) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
 
-  const { data: tenant } = await ctx.admin.from('tenants').select('profession').eq('id', ctx.profile.tenant_id).single()
-  if (tenant?.profession !== 'nutritionist') {
-    return NextResponse.json({ error: 'Funzione disponibile per i nutrizionisti' }, { status: 403 })
+  const { data: tenant } = await ctx.admin.from('tenants').select('profession, enabled_modules').eq('id', ctx.profile.tenant_id).single()
+  if (!hasPracticeModule(tenant, 'nutrition')) {
+    return NextResponse.json({ error: 'Attiva il modulo Piani alimentari nelle impostazioni dello studio' }, { status: 403 })
   }
 
   const parsed = nutritionPlanSchema.safeParse(await request.json().catch(() => null))

@@ -9,6 +9,7 @@ const companySettingsSchema = z.object({
   brand_accent: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   timezone: z.string().trim().min(1).max(100).optional(),
   locale: z.enum(['it', 'en']).optional(),
+  enabled_modules: z.array(z.enum(['training', 'nutrition'])).max(2).optional(),
 })
 
 function normalizeLogoUrl(value: string | null | undefined) {

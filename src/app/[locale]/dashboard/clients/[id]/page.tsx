@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/index'
 import { formatDate, calcAge } from '@/lib/utils'
 import type { Metadata } from 'next'
 import { normalizeCustomFieldDefinition } from '@/lib/custom-fields'
+import { getEnabledModules } from '@/lib/practice-modules'
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>
@@ -37,7 +38,7 @@ export default async function ClientDetailPage({ params, searchParams }: PagePro
 
   if (!profile?.tenant_id) redirect(`/${locale}/auth/onboarding`)
 
-  const { data: tenant } = await supabase.from('tenants').select('name, logo_url, profession').eq('id', profile.tenant_id).single()
+  const { data: tenant } = await (supabase as any).from('tenants').select('name, logo_url, profession, enabled_modules').eq('id', profile.tenant_id).single()
 
   // Recupera il cliente con relazioni
   const { data: client, error } = await supabase
@@ -166,6 +167,7 @@ export default async function ClientDetailPage({ params, searchParams }: PagePro
         tenantId={profile.tenant_id}
         userId={user.id}
         profession={tenant?.profession ?? 'other'}
+        enabledModules={getEnabledModules(tenant)}
         tenant={{ name: tenant?.name ?? 'FitnessFlow', logo_url: tenant?.logo_url }}
         initialTab={tab}
         customFieldDefs={(customFieldDefs ?? []).map(normalizeCustomFieldDefinition)}

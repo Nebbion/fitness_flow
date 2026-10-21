@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/utils'
 import type { UserRole, Tenant } from '@/types'
+import type { PracticeModule } from '@/lib/practice-modules'
 
 interface SidebarProps {
   locale: string
@@ -30,7 +31,7 @@ interface NavItem {
   icon: React.ElementType
   roles: UserRole[]
   badge?: string
-  professions?: string[]
+  module?: PracticeModule
 }
 
 function getNavItems(locale: string): NavItem[] {
@@ -58,14 +59,14 @@ function getNavItems(locale: string): NavItem[] {
       href: `/${locale}/dashboard/exercises`,
       icon: Dumbbell,
       roles: ['TENANT_ADMIN', 'STAFF'],
-      professions: ['personal_trainer', 'nutritionist'],
+      module: 'training',
     },
     {
       key: 'nutrition',
       href: `/${locale}/dashboard/nutrition`,
       icon: Utensils,
       roles: ['TENANT_ADMIN', 'STAFF'],
-      professions: ['nutritionist'],
+      module: 'nutrition',
     },
     {
       key: 'services',
@@ -100,13 +101,13 @@ function getNavItems(locale: string): NavItem[] {
   ]
 }
 
-export function Sidebar({ locale, role, tenant, user }: SidebarProps) {
+export function Sidebar({ locale, role, tenant, user, enabledModules }: SidebarProps & { enabledModules: PracticeModule[] }) {
   const t = useTranslations('nav')
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
 
   const navItems = getNavItems(locale).filter(item =>
-    item.roles.includes(role) && (!item.professions || item.professions.includes(tenant?.profession ?? 'other'))
+    item.roles.includes(role) && (!item.module || enabledModules.includes(item.module))
   )
 
   const isActive = (href: string) => {

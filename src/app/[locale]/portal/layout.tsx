@@ -7,6 +7,7 @@ import { getTranslations } from 'next-intl/server'
 import { Activity, CalendarDays, Dumbbell, ClipboardList, History, LogOut, Share2 } from 'lucide-react'
 import { SessionTimeout } from '@/components/auth/session-timeout'
 import { PwaInstallHelp } from '@/components/pwa/pwa-install-help'
+import { hasPracticeModule } from '@/lib/practice-modules'
 
 interface PortalLayoutProps {
   children: React.ReactNode
@@ -36,8 +37,8 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
 
   const memberships = await getPortalClientMemberships(user.id)
   const tenant = memberships[0]?.tenants
-  const hasTraining = memberships.some(item => ['personal_trainer', 'nutritionist'].includes(item.tenants?.profession ?? ''))
-  const hasNutrition = memberships.some(item => item.tenants?.profession === 'nutritionist')
+  const hasTraining = memberships.some(item => hasPracticeModule(item.tenants, 'training'))
+  const hasNutrition = memberships.some(item => hasPracticeModule(item.tenants, 'nutrition'))
 
   const portalNav = [
     ...(hasTraining ? [

@@ -1,4 +1,5 @@
 import { createAdminClient, createClient } from '@/lib/supabase/server'
+import { hasPracticeModule } from '@/lib/practice-modules'
 
 export async function getProfessional() {
   const supabase = await createClient() as any
@@ -7,7 +8,7 @@ export async function getProfessional() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('tenant_id, role, tenants(profession)')
+    .select('tenant_id, role, tenants(profession, enabled_modules)')
     .eq('id', user.id)
     .single()
 
@@ -19,7 +20,7 @@ export async function getTrainingProfessional() {
   const actor = await getProfessional()
   if (!actor) return null
   const tenant = Array.isArray(actor.profile?.tenants) ? actor.profile.tenants[0] : actor.profile?.tenants
-  if (!['personal_trainer', 'nutritionist'].includes(tenant?.profession ?? '')) return null
+  if (!hasPracticeModule(tenant, 'training')) return null
   return actor
 }
 

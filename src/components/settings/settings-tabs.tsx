@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input, Label, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/index'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { getEnabledModules, type PracticeModule } from '@/lib/practice-modules'
 import type { CustomFieldDefinition } from '@/types'
 import { WhatsAppConnectionPanel } from './whatsapp-connection-panel'
 
@@ -56,6 +57,7 @@ export function SettingsTabs({ locale, role, tenant, adminAccount, customFields,
     brand_accent: tenant?.brand_accent ?? '#06B6D4',
     timezone: tenant?.timezone ?? 'Europe/Rome',
     locale: tenant?.locale ?? 'it',
+    enabled_modules: getEnabledModules(tenant),
   })
 
   async function saveCompany() {
@@ -182,6 +184,22 @@ export function SettingsTabs({ locale, role, tenant, adminAccount, customFields,
             <div className="rounded-md border border-border bg-muted/40 px-3 py-2.5">
               <p className="text-xs font-medium text-muted-foreground">Categoria professionale</p>
               <p className="mt-0.5 text-sm font-semibold">{PROFESSION_LABELS[tenant?.profession] ?? PROFESSION_LABELS.other}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Moduli disponibili</Label>
+              <p className="text-xs text-muted-foreground">La categoria propone una configurazione iniziale. Puoi attivare entrambi i moduli in qualsiasi momento.</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {([
+                  { key: 'training' as const, label: 'Schede allenamento', description: 'Schede, libreria esercizi e progressi.' },
+                  { key: 'nutrition' as const, label: 'Piani alimentari', description: 'Piani, pasti, calorie e misurazioni.' },
+                ]).map(module => {
+                  const enabled = companyForm.enabled_modules.includes(module.key)
+                  return <label key={module.key} className={cn('flex cursor-pointer gap-3 rounded-md border p-3 transition-colors', enabled ? 'border-primary bg-primary/5' : 'border-border bg-background')}>
+                    <input type="checkbox" checked={enabled} className="mt-0.5 h-4 w-4 accent-primary" onChange={() => setCompanyForm(form => ({ ...form, enabled_modules: enabled ? form.enabled_modules.filter(item => item !== module.key) : [...form.enabled_modules, module.key] as PracticeModule[] }))} />
+                    <span><span className="block text-sm font-medium">{module.label}</span><span className="block text-xs text-muted-foreground">{module.description}</span></span>
+                  </label>
+                })}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Nome studio</Label>

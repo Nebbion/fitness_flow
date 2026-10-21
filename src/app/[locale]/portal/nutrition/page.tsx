@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { PortalNutritionPlan } from '@/components/nutrition/portal-nutrition-plan'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { getPortalClientMemberships } from '@/lib/portal/client-memberships'
+import { hasPracticeModule } from '@/lib/practice-modules'
 
 interface PageProps { params: Promise<{ locale: string }> }
 
@@ -16,7 +17,7 @@ export default async function PortalNutritionPage({ params }: PageProps) {
 
   const admin = createAdminClient() as any
   const memberships = await getPortalClientMemberships(user.id)
-  const nutritionMemberships = memberships.filter(item => item.tenants?.profession === 'nutritionist')
+  const nutritionMemberships = memberships.filter(item => hasPracticeModule(item.tenants, 'nutrition'))
   if (!nutritionMemberships.length) redirect(`/${locale}/portal`)
   const clientIds = nutritionMemberships.map(item => item.id)
   const [plansWithHistoryResult] = await Promise.all([

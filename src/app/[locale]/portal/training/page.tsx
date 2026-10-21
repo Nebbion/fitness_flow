@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getPortalClientMemberships } from '@/lib/portal/client-memberships'
 import { ClientTrainingApp } from '@/components/training/client-training-app'
+import { hasPracticeModule } from '@/lib/practice-modules'
 
 interface PageProps {
   params: Promise<{ locale: string }>
@@ -22,7 +23,7 @@ export default async function PortalTrainingPage({ params, searchParams }: PageP
   if (!user) redirect(`/${locale}/auth/login`)
 
   const memberships = await getPortalClientMemberships(user.id)
-  const trainingMemberships = memberships.filter(item => ['personal_trainer', 'nutritionist'].includes(item.tenants?.profession ?? ''))
+  const trainingMemberships = memberships.filter(item => hasPracticeModule(item.tenants, 'training'))
   if (!trainingMemberships.length) redirect(`/${locale}/portal`)
   return <ClientTrainingApp locale={locale} initialView={initialView}
     clientOptions={trainingMemberships.map(item => ({ id: item.id, label: item.tenants?.name ?? 'Professionista' }))} />

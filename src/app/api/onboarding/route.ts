@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { onboardingSchema } from '@/schemas'
+import { defaultModulesForProfession } from '@/lib/practice-modules'
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
         name: company_name,
         slug,
         profession,
+        enabled_modules: defaultModulesForProfession(profession),
         logo_url: logo_url?.trim() || null,
         brand_primary: brand_primary ?? '#2563EB',
         brand_accent: brand_accent ?? '#06B6D4',
