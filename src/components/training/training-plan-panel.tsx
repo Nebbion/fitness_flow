@@ -10,6 +10,13 @@ type ExerciseImage = { path: string; alt: string; url?: string }
 type Exercise = { id: string; name: string; targetSets: number; targetReps: string; targetWeightKg?: number | null; isometrySeconds?: number | null; notes: string; images: ExerciseImage[] }
 type LibraryExercise = { id: string; name: string; default_sets: number; default_reps: string; default_weight_kg?: number | null; default_isometry_seconds?: number | null; notes: string; images: ExerciseImage[] }
 
+const EXERCISE_COLORS = [
+  { header: 'bg-sky-50 text-sky-950 dark:bg-sky-950/30 dark:text-sky-100', badge: 'bg-sky-600' },
+  { header: 'bg-emerald-50 text-emerald-950 dark:bg-emerald-950/30 dark:text-emerald-100', badge: 'bg-emerald-600' },
+  { header: 'bg-amber-50 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100', badge: 'bg-amber-600' },
+  { header: 'bg-rose-50 text-rose-950 dark:bg-rose-950/30 dark:text-rose-100', badge: 'bg-rose-600' },
+]
+
 export function TrainingPlanPanel({ clientId, locale }: { clientId: string; locale: string }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -68,6 +75,20 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
 
   function updateExercise(index: number, patch: Partial<Exercise>) {
     setExercises(value => value.map((exercise, i) => i === index ? { ...exercise, ...patch } : exercise))
+  }
+
+  function applyLibraryExercise(index: number, libraryId: string) {
+    const source = library.find(item => item.id === libraryId)
+    if (!source) return
+    updateExercise(index, {
+      name: source.name,
+      targetSets: source.default_sets,
+      targetReps: source.default_reps,
+      targetWeightKg: source.default_weight_kg ?? null,
+      isometrySeconds: source.default_isometry_seconds ?? null,
+      notes: source.notes,
+      images: source.images ?? [],
+    })
   }
 
   function addFromLibrary() {
@@ -147,39 +168,66 @@ export function TrainingPlanPanel({ clientId, locale }: { clientId: string; loca
           <Button variant="ghost" onClick={addExercise}><Plus />Libero</Button>
         </div>
         {library.length === 0 && <p className="text-xs text-muted-foreground">Crea esercizi con immagini dalla voce “Esercizi” nel menu, oppure aggiungi un esercizio libero.</p>}
-        {exercises.map((exercise, index) => <div key={exercise.id} className="border-b border-border pb-4 last:border-0 space-y-3">
-          <div className="flex gap-2">
-            <Input value={exercise.name} onChange={event => updateExercise(index, { name: event.target.value })} placeholder="Nome esercizio" />
-            <Button size="icon" variant="ghost" aria-label="Rimuovi esercizio" onClick={() => setExercises(value => value.filter((_, i) => i !== index))}>
-              <Trash2 />
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="text-xs text-muted-foreground">Serie
-              <Input className="mt-1" type="number" min={1} max={20} value={exercise.targetSets}
-                onChange={event => updateExercise(index, { targetSets: Number(event.target.value) })} />
-            </label>
-            <label className="text-xs text-muted-foreground">Ripetizioni
-              <Input className="mt-1" value={exercise.targetReps} onChange={event => updateExercise(index, { targetReps: event.target.value })} />
-            </label>
-          </div>
-          <textarea className="w-full rounded-md border border-input bg-background p-3 text-sm" rows={2} value={exercise.notes}
-            onChange={event => updateExercise(index, { notes: event.target.value })} placeholder="Indicazioni tecniche" />
-          <label className="block text-xs text-muted-foreground">Carico consigliato (kg)
-            <Input type="number" min={0} max={2000} step="any" value={exercise.targetWeightKg ?? ''}
-              onChange={event => updateExercise(index, { targetWeightKg: event.target.value === '' ? null : Number(event.target.value) })} />
-          </label>
-          <label className="block text-xs text-muted-foreground">Tempo dell'esercizio - isometria (secondi, facoltativo)
-            <Input className="mt-1" type="number" min={1} max={3600} step={1} placeholder="Es. 30" value={exercise.isometrySeconds ?? ''}
-              onChange={event => updateExercise(index, { isometrySeconds: event.target.value === '' ? null : Number(event.target.value) })} />
-          </label>
-          {(exercise.images?.length ?? 0) > 0 && <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            {exercise.images.map(image => <div key={image.path} className="aspect-square overflow-hidden rounded-md border bg-white">
-              {image.url ? <img src={image.url} alt={image.alt || exercise.name} className="h-full w-full object-contain" />
-                : <div className="h-full grid place-items-center text-[10px] text-muted-foreground">Immagine</div>}
-            </div>)}
-          </div>}
-        </div>)}
+        {exercises.map((exercise, index) => {
+          const colors = EXERCISE_COLORS[index % EXERCISE_COLORS.length]
+          const selectedSource = library.find(item => item.name === exercise.name)
+          return <section key={exercise.id} className="overflow-hidden rounded-lg border border-border bg-card">
+            <header className={`flex items-center justify-between gap-3 px-4 py-3 ${colors.header}`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold text-white ${colors.badge}`}>{index + 1}</span>
+                <div className="min-w-0"><p className="text-sm font-semibold truncate">{exercise.name || 'Nuovo esercizio'}</p>
+                  <p className="text-xs opacity-70">Configura esecuzione e carico</p></div>
+              </div>
+              <Button size="icon" variant="ghost" className="shrink-0" aria-label="Rimuovi esercizio" onClick={() => setExercises(value => value.filter((_, i) => i !== index))}>
+                <Trash2 />
+              </Button>
+            </header>
+            <div className="space-y-4 p-4">
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="text-xs font-medium text-muted-foreground">Esercizio dalla libreria
+                  <select className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
+                    value={selectedSource?.id ?? ''} onChange={event => applyLibraryExercise(index, event.target.value)}>
+                    <option value="">Esercizio personalizzato</option>
+                    {library.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-medium text-muted-foreground">Nome visualizzato
+                  <Input className="mt-1" value={exercise.name} onChange={event => updateExercise(index, { name: event.target.value })} placeholder="Nome esercizio" />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <label className="rounded-md border border-sky-200 bg-sky-50/70 p-2 text-xs font-medium text-sky-950 dark:border-sky-900 dark:bg-sky-950/20 dark:text-sky-100">Serie
+                  <Input className="mt-1 bg-background" type="number" min={1} max={20} value={exercise.targetSets}
+                    onChange={event => updateExercise(index, { targetSets: Number(event.target.value) })} />
+                </label>
+                <label className="rounded-md border border-emerald-200 bg-emerald-50/70 p-2 text-xs font-medium text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-100">Ripetizioni
+                  <Input className="mt-1 bg-background" value={exercise.targetReps} onChange={event => updateExercise(index, { targetReps: event.target.value })} />
+                </label>
+                <label className="rounded-md border border-amber-200 bg-amber-50/70 p-2 text-xs font-medium text-amber-950 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-100">Carico (kg)
+                  <Input className="mt-1 bg-background" type="number" min={0} max={2000} step="any" value={exercise.targetWeightKg ?? ''}
+                    onChange={event => updateExercise(index, { targetWeightKg: event.target.value === '' ? null : Number(event.target.value) })} />
+                </label>
+                <label className="rounded-md border border-rose-200 bg-rose-50/70 p-2 text-xs font-medium text-rose-950 dark:border-rose-900 dark:bg-rose-950/20 dark:text-rose-100">Isometria (sec.)
+                  <Input className="mt-1 bg-background" type="number" min={1} max={3600} step={1} placeholder="Facoltativo" value={exercise.isometrySeconds ?? ''}
+                    onChange={event => updateExercise(index, { isometrySeconds: event.target.value === '' ? null : Number(event.target.value) })} />
+                </label>
+              </div>
+              <label className="block text-xs font-medium text-muted-foreground">Indicazioni tecniche
+                <textarea className="mt-1 w-full rounded-md border border-input bg-background p-3 text-sm text-foreground" rows={2} value={exercise.notes}
+                  onChange={event => updateExercise(index, { notes: event.target.value })} placeholder="Inserisci ritmo, recupero, tecnica o altre indicazioni" />
+              </label>
+              {(exercise.images?.length ?? 0) > 0 && <div className="rounded-md border border-border bg-muted/30 p-3">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Immagini associate all'esercizio</p>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                  {exercise.images.map(image => <div key={image.path} className="aspect-square overflow-hidden rounded-md border bg-white">
+                    {image.url ? <img src={image.url} alt={image.alt || exercise.name} className="h-full w-full object-contain" />
+                      : <div className="grid h-full place-items-center text-[10px] text-muted-foreground">Immagine</div>}
+                  </div>)}
+                </div>
+              </div>}
+            </div>
+          </section>
+        })}
         {exercises.length === 0 && <div className="py-8 text-center text-sm text-muted-foreground"><Dumbbell className="mx-auto mb-2" />Aggiungi il primo esercizio</div>}
         <div className="flex justify-end"><Button onClick={savePlan} disabled={saving || exercises.length === 0}>
           {saving ? <Loader2 className="animate-spin" /> : <Save />} Salva scheda
