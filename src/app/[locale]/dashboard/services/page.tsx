@@ -5,6 +5,7 @@ import { Plus, Clock, Euro, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/index'
 import { ServiceForm } from '@/components/services/service-form'
+import { ServicePresetCatalog } from '@/components/services/service-preset-catalog'
 import type { Metadata } from 'next'
 
 interface PageProps {
@@ -50,6 +51,8 @@ export default async function ServicesPage({ params }: PageProps) {
           <p className="text-muted-foreground text-sm mt-1">{services?.length ?? 0} servizi configurati</p>
         </div>
       </div>
+
+      <ServicePresetCatalog existingNames={(services ?? []).map(service => service.name)} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Lista servizi */}
