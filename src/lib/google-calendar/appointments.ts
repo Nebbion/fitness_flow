@@ -2,10 +2,12 @@ import { createAdminClient } from '@/lib/supabase/server'
 import {
   createGoogleCalendarEvent,
   deleteGoogleCalendarEvent,
+  ensureGoogleCalendarEventLabel,
   GoogleCalendarApiError,
   googleEventIdForAppointment,
   listGoogleCalendarEvents,
   refreshGoogleAccessToken,
+  updateGoogleCalendarEventLabel,
   updateGoogleCalendarEvent,
   type GoogleCalendarAttendeeStatus,
   type GoogleCalendarEventInput,
@@ -17,10 +19,15 @@ export interface GoogleCalendarAppointmentSyncResult {
   action?: 'created' | 'updated' | 'deleted'
   eventId?: string
   invitedClient?: boolean
+  labelApplied?: boolean
   message?: string
 }
 
-function calendarEventFromAppointment(appointment: any, timeZone?: string): GoogleCalendarEventInput {
+function calendarEventFromAppointment(
+  appointment: any,
+  timeZone?: string,
+  eventLabelId?: string
+): GoogleCalendarEventInput {
   const client = appointment.clients as { full_name?: string; email?: string | null } | null
   const service = appointment.services as { name?: string } | null
   const tenant = appointment.tenants as { name?: string } | null
@@ -31,6 +38,7 @@ function calendarEventFromAppointment(appointment: any, timeZone?: string): Goog
     id: googleEventIdForAppointment(appointment.id),
     summary: `${service?.name?.trim() || 'Appuntamento'} · ${clientName}`,
     description: `Appuntamento con ${tenant?.name?.trim() || 'FitnessFlow'}`,
+    ...(eventLabelId ? { eventLabelId } : {}),
     start: {
       dateTime: appointment.start_at,
       ...(timeZone ? { timeZone } : {}),
@@ -64,7 +72,7 @@ export async function syncAppointmentToGoogleCalendar(
       id, tenant_id, staff_id, start_at, end_at, status, google_event_id,
       google_attendee_status,
       clients (full_name, email),
-      services (name),
+      services (id, name, color),
       tenants (name, timezone)
     `)
     .eq('id', appointmentId)
@@ -110,9 +118,36 @@ export async function syncAppointmentToGoogleCalendar(
     }
 
     const tenant = appointment.tenants as { timezone?: string | null } | null
+    const service = appointment.services as {
+      id?: string
+      name?: string
+      color?: string | null
+    } | null
+    let eventLabelId: string | undefined
+
+    if (service?.id) {
+      try {
+        const labelReady = await ensureGoogleCalendarEventLabel({
+          accessToken: token.access_token,
+          calendarId: connection.calendar_id,
+          label: {
+            id: service.id,
+            name: service.name?.trim() || 'Servizio',
+            backgroundColor: service.color || '#2563EB',
+          },
+        })
+        if (labelReady) eventLabelId = service.id
+      } catch (labelError) {
+        // Un calendario condiviso puo essere scrivibile senza consentire la
+        // gestione delle etichette. L'evento continua a sincronizzarsi.
+        console.warn('Google Calendar label sync skipped:', labelError)
+      }
+    }
+
     const event = calendarEventFromAppointment(
       appointment,
-      connection.calendar_timezone ?? tenant?.timezone ?? undefined
+      connection.calendar_timezone ?? tenant?.timezone ?? undefined,
+      eventLabelId
     )
     let action: 'created' | 'updated'
 
@@ -165,7 +200,13 @@ export async function syncAppointmentToGoogleCalendar(
       .update({ last_error: null })
       .eq('id', connection.id)
 
-    return { status: 'synced', action, eventId, invitedClient }
+    return {
+      status: 'synced',
+      action,
+      eventId,
+      invitedClient,
+      ...(service?.id ? { labelApplied: Boolean(eventLabelId) } : {}),
+    }
   } catch (error: any) {
     const message = error?.message ?? 'Sincronizzazione Google Calendar non riuscita'
     await admin.from('google_calendar_connections')
@@ -241,8 +282,9 @@ export async function syncGoogleCalendarResponses(input: {
       const { data: appointments, error: appointmentsError } = await admin
         .from('appointments')
         .select(`
-          id, status, google_event_id, google_attendee_status,
-          clients (email)
+          id, status, google_event_id, google_attendee_status, service_id,
+          clients (email),
+          services (id, name, color)
         `)
         .eq('tenant_id', input.tenantId)
         .eq('staff_id', connection.professional_id)
@@ -251,6 +293,45 @@ export async function syncGoogleCalendarResponses(input: {
         .not('google_event_id', 'is', null)
 
       if (appointmentsError) throw appointmentsError
+
+      const labelsReady = new Set<string>()
+      const servicesNeedingLabels = new Map<string, { id: string; name: string; color: string }>()
+      for (const appointment of appointments ?? []) {
+        const googleEvent = eventsById.get(appointment.google_event_id)
+        const service = appointment.services as {
+          id?: string
+          name?: string
+          color?: string | null
+        } | null
+        if (
+          googleEvent?.status !== 'cancelled' &&
+          service?.id &&
+          googleEvent?.eventLabelId !== service.id
+        ) {
+          servicesNeedingLabels.set(service.id, {
+            id: service.id,
+            name: service.name?.trim() || 'Servizio',
+            color: service.color || '#2563EB',
+          })
+        }
+      }
+
+      for (const service of servicesNeedingLabels.values()) {
+        try {
+          const ready = await ensureGoogleCalendarEventLabel({
+            accessToken: token.access_token,
+            calendarId: connection.calendar_id,
+            label: {
+              id: service.id,
+              name: service.name,
+              backgroundColor: service.color,
+            },
+          })
+          if (ready) labelsReady.add(service.id)
+        } catch (labelError) {
+          console.warn('Google Calendar existing label sync skipped:', labelError)
+        }
+      }
 
       for (const appointment of appointments ?? []) {
         result.checked += 1
@@ -268,6 +349,24 @@ export async function syncGoogleCalendarResponses(input: {
             result.changed += 1
           }
           continue
+        }
+
+        const service = appointment.services as { id?: string } | null
+        if (
+          service?.id &&
+          labelsReady.has(service.id) &&
+          googleEvent.eventLabelId !== service.id
+        ) {
+          try {
+            await updateGoogleCalendarEventLabel(
+              token.access_token,
+              connection.calendar_id,
+              googleEvent.id,
+              service.id
+            )
+          } catch (labelError) {
+            console.warn('Google Calendar existing event label sync skipped:', labelError)
+          }
         }
 
         const client = appointment.clients as { email?: string | null } | null

@@ -6,7 +6,10 @@ const CALENDAR_API_URL = 'https://www.googleapis.com/calendar/v3'
 export const GOOGLE_CALENDAR_SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+  'https://www.googleapis.com/auth/calendar.calendars',
 ]
+
+export const GOOGLE_CALENDAR_LABELS_SCOPE = 'https://www.googleapis.com/auth/calendar.calendars'
 
 export interface GoogleCalendarListItem {
   id: string
@@ -28,6 +31,7 @@ export interface GoogleCalendarEventInput {
   id?: string
   summary: string
   description?: string
+  eventLabelId?: string
   start: { dateTime: string; timeZone?: string }
   end: { dateTime: string; timeZone?: string }
   attendees?: Array<{
@@ -45,10 +49,28 @@ export type GoogleCalendarAttendeeStatus = 'needsAction' | 'accepted' | 'decline
 export interface GoogleCalendarEventSnapshot {
   id: string
   status: 'confirmed' | 'tentative' | 'cancelled'
+  eventLabelId?: string
   attendees?: Array<{
     email?: string
     responseStatus?: GoogleCalendarAttendeeStatus
   }>
+}
+
+export interface GoogleCalendarEventLabel {
+  id: string
+  backgroundColor: string
+  name?: string
+}
+
+interface GoogleCalendarResource {
+  etag?: string
+  summary?: string
+  description?: string
+  location?: string
+  timeZone?: string
+  labelProperties?: {
+    eventLabels?: GoogleCalendarEventLabel[]
+  }
 }
 
 export class GoogleCalendarApiError extends Error {
@@ -200,9 +222,19 @@ function googleCalendarEventUrl(calendarId: string, eventId?: string) {
   return eventId ? `${base}/${encodeURIComponent(eventId)}` : base
 }
 
+function googleCalendarUrl(calendarId: string) {
+  return `${CALENDAR_API_URL}/calendars/${encodeURIComponent(calendarId)}`
+}
+
 function withSendUpdates(url: string) {
   const result = new URL(url)
   result.searchParams.set('sendUpdates', 'all')
+  return result
+}
+
+function withEventOptions(url: string, event: GoogleCalendarEventInput) {
+  const result = withSendUpdates(url)
+  if (event.eventLabelId) result.searchParams.set('eventLabelVersion', '1')
   return result
 }
 
@@ -215,7 +247,7 @@ export async function createGoogleCalendarEvent(
   calendarId: string,
   event: GoogleCalendarEventInput
 ) {
-  const response = await fetch(withSendUpdates(googleCalendarEventUrl(calendarId)), {
+  const response = await fetch(withEventOptions(googleCalendarEventUrl(calendarId), event), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -235,7 +267,7 @@ export async function updateGoogleCalendarEvent(
 ) {
   const update = { ...event }
   delete update.id
-  const response = await fetch(withSendUpdates(googleCalendarEventUrl(calendarId, eventId)), {
+  const response = await fetch(withEventOptions(googleCalendarEventUrl(calendarId, eventId), event), {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -263,6 +295,27 @@ export async function deleteGoogleCalendarEvent(
   await readGoogleResponse<Record<string, never>>(response)
 }
 
+export async function updateGoogleCalendarEventLabel(
+  accessToken: string,
+  calendarId: string,
+  eventId: string,
+  eventLabelId: string
+) {
+  const url = new URL(googleCalendarEventUrl(calendarId, eventId))
+  url.searchParams.set('eventLabelVersion', '1')
+  url.searchParams.set('sendUpdates', 'none')
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ eventLabelId }),
+    cache: 'no-store',
+  })
+  return readGoogleResponse<{ id: string; eventLabelId?: string }>(response)
+}
+
 export async function listGoogleCalendarEvents(input: {
   accessToken: string
   calendarId: string
@@ -278,6 +331,7 @@ export async function listGoogleCalendarEvents(input: {
     url.searchParams.set('timeMax', input.timeMax)
     url.searchParams.set('singleEvents', 'true')
     url.searchParams.set('showDeleted', 'true')
+    url.searchParams.set('eventLabelVersion', '1')
     url.searchParams.set('maxResults', '2500')
     if (pageToken) url.searchParams.set('pageToken', pageToken)
 
@@ -294,4 +348,76 @@ export async function listGoogleCalendarEvents(input: {
   } while (pageToken)
 
   return events
+}
+
+async function getGoogleCalendarResource(accessToken: string, calendarId: string) {
+  const response = await fetch(googleCalendarUrl(calendarId), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: 'no-store',
+  })
+  return readGoogleResponse<GoogleCalendarResource>(response)
+}
+
+function normalizedLabelColor(color: string) {
+  return /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : '#2563eb'
+}
+
+/**
+ * Crea o aggiorna una singola etichetta senza sovrascrivere quelle gia
+ * presenti nel calendario. Restituisce false se il calendario ha raggiunto
+ * il limite Google di 200 etichette.
+ */
+export async function ensureGoogleCalendarEventLabel(input: {
+  accessToken: string
+  calendarId: string
+  label: GoogleCalendarEventLabel
+}) {
+  const desired: GoogleCalendarEventLabel = {
+    id: input.label.id,
+    backgroundColor: normalizedLabelColor(input.label.backgroundColor),
+    ...(input.label.name?.trim()
+      ? { name: input.label.name.trim().slice(0, 50) }
+      : {}),
+  }
+
+  // Un retry con ETag evita che due appuntamenti creati insieme si
+  // sovrascrivano reciprocamente le etichette del calendario.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const calendar = await getGoogleCalendarResource(input.accessToken, input.calendarId)
+    const labels = calendar.labelProperties?.eventLabels ?? []
+    const current = labels.find(label => label.id === desired.id)
+    if (
+      current &&
+      current.backgroundColor.toLowerCase() === desired.backgroundColor &&
+      (current.name ?? '') === (desired.name ?? '')
+    ) {
+      return true
+    }
+
+    const mergedLabels = [...labels.filter(label => label.id !== desired.id), desired]
+    if (mergedLabels.length > 200) return false
+
+    const response = await fetch(googleCalendarUrl(input.calendarId), {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${input.accessToken}`,
+        'Content-Type': 'application/json',
+        ...(calendar.etag ? { 'If-Match': calendar.etag } : {}),
+      },
+      body: JSON.stringify({
+        ...(calendar.summary ? { summary: calendar.summary } : {}),
+        ...(calendar.description ? { description: calendar.description } : {}),
+        ...(calendar.location ? { location: calendar.location } : {}),
+        ...(calendar.timeZone ? { timeZone: calendar.timeZone } : {}),
+        labelProperties: { eventLabels: mergedLabels },
+      }),
+      cache: 'no-store',
+    })
+
+    if (response.status === 412 && attempt === 0) continue
+    await readGoogleResponse<GoogleCalendarResource>(response)
+    return true
+  }
+
+  return false
 }

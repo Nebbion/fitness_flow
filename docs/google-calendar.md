@@ -9,7 +9,8 @@ La prima fase dell'integrazione collega un account Google per ogni professionist
 3. Configurare Google Auth Platform: branding, audience e contatti.
 4. Aggiungere gli scope:
    - `https://www.googleapis.com/auth/calendar.events`;
-   - `https://www.googleapis.com/auth/calendar.calendarlist.readonly`.
+   - `https://www.googleapis.com/auth/calendar.calendarlist.readonly`;
+   - `https://www.googleapis.com/auth/calendar.calendars`.
 5. Creare un client OAuth 2.0 di tipo **Web application**.
 6. Aggiungere tra gli URI di reindirizzamento autorizzati:
 
@@ -45,6 +46,8 @@ NEXT_PUBLIC_APP_URL=https://<dominio>
 4. Selezionare **Collega Google Calendar** e completare il consenso Google.
 5. Scegliere uno dei calendari scrivibili e salvarlo.
 6. Verificare che la tabella `google_calendar_connections` contenga una riga per il professionista. Il refresh token deve comparire soltanto nella colonna cifrata e non deve mai essere restituito dalle API browser.
+
+I professionisti collegati prima dell'aggiunta dello scope `calendar.calendars` devono usare **Abilita etichette** per autorizzarlo. Ogni servizio FitnessFlow viene creato nel calendario come etichetta personalizzata usando l'ID del servizio, il suo nome e il suo colore. Solo il proprietario del calendario puo creare o modificare etichette; su un calendario condiviso con solo accesso in scrittura, gli eventi continuano a sincronizzarsi senza etichetta.
 
 ## Sincronizzazione delle risposte
 

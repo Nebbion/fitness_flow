@@ -23,6 +23,7 @@ interface CalendarOption {
   summary: string
   primary: boolean
   timeZone: string | null
+  accessRole: string
 }
 
 export function GoogleCalendarConnectionPanel({ locale }: { locale: string }) {
@@ -32,6 +33,7 @@ export function GoogleCalendarConnectionPanel({ locale }: { locale: string }) {
   const [calendars, setCalendars] = useState<CalendarOption[]>([])
   const [selectedCalendarId, setSelectedCalendarId] = useState('')
   const [setupReady, setSetupReady] = useState(false)
+  const [labelsReady, setLabelsReady] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
@@ -46,6 +48,7 @@ export function GoogleCalendarConnectionPanel({ locale }: { locale: string }) {
       setCalendars(data.calendars ?? [])
       setSelectedCalendarId(data.connection?.calendar_id ?? '')
       setSetupReady(data.setupReady)
+      setLabelsReady(data.labelsReady === true)
     } catch (error: any) {
       toast.error(error.message)
     } finally {
@@ -112,6 +115,7 @@ export function GoogleCalendarConnectionPanel({ locale }: { locale: string }) {
   if (loading) return <div className="h-40 rounded-lg bg-muted animate-pulse" />
 
   const connected = connection?.status === 'active'
+  const selectedCalendar = calendars.find(calendar => calendar.id === selectedCalendarId)
   return (
     <Card>
       <CardHeader>
@@ -143,6 +147,17 @@ export function GoogleCalendarConnectionPanel({ locale }: { locale: string }) {
             </div>
 
             <div className="space-y-3 border-t border-border pt-5">
+              {!labelsReady && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    Autorizza la gestione delle etichette per distinguere gli appuntamenti in base al servizio.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={connect}>
+                    <Link2 />
+                    Abilita etichette
+                  </Button>
+                </div>
+              )}
               <label className="block space-y-1.5 text-sm">
                 <span className="font-medium">Calendario per gli appuntamenti</span>
                 <select
@@ -153,13 +168,19 @@ export function GoogleCalendarConnectionPanel({ locale }: { locale: string }) {
                   {calendars.map(calendar => (
                     <option key={calendar.id} value={calendar.id}>
                       {calendar.summary}{calendar.primary ? ' (principale)' : ''}
+                      {calendar.accessRole !== 'owner' ? ' (senza etichette)' : ''}
                     </option>
                   ))}
                 </select>
               </label>
               <p className="text-xs text-muted-foreground">
-                In questa prima fase FitnessFlow userà questo calendario come destinazione degli appuntamenti.
+                FitnessFlow userà questo calendario come destinazione degli appuntamenti e assocerà automaticamente l’etichetta del servizio.
               </p>
+              {selectedCalendar && selectedCalendar.accessRole !== 'owner' && (
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Puoi aggiungere eventi a questo calendario condiviso, ma soltanto il proprietario può crearvi le etichette.
+                </p>
+              )}
               <div className="flex justify-end">
                 <Button
                   onClick={saveCalendar}

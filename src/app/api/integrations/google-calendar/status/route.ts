@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import {
+  GOOGLE_CALENDAR_LABELS_SCOPE,
   googleCalendarSetupReady,
   listWritableGoogleCalendars,
   refreshGoogleAccessToken,
@@ -18,7 +19,7 @@ export async function GET() {
   const admin = createAdminClient() as any
   const { data: connection, error } = await admin
     .from('google_calendar_connections')
-    .select('id, google_account_email, calendar_id, calendar_name, calendar_timezone, status, last_error, connected_at, updated_at, refresh_token_encrypted')
+    .select('id, google_account_email, calendar_id, calendar_name, calendar_timezone, status, last_error, connected_at, updated_at, granted_scopes, refresh_token_encrypted')
     .eq('tenant_id', professional.tenantId)
     .eq('professional_id', professional.id)
     .maybeSingle()
@@ -50,7 +51,12 @@ export async function GET() {
 
   if (connection) delete connection.refresh_token_encrypted
   return NextResponse.json(
-    { connection, calendars, setupReady: googleCalendarSetupReady() },
+    {
+      connection,
+      calendars,
+      setupReady: googleCalendarSetupReady(),
+      labelsReady: connection?.granted_scopes?.includes(GOOGLE_CALENDAR_LABELS_SCOPE) ?? false,
+    },
     { headers: { 'Cache-Control': 'no-store' } }
   )
 }
