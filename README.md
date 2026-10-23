@@ -184,7 +184,7 @@ Le migrations si trovano in `supabase/migrations/`:
 | `014_training_weight_history.sql` | Allenamenti dal portale cliente, storico variazioni carichi e kg consigliati nella libreria |
 | `015_training_isometry.sql` | Tempo facoltativo di isometria nella libreria esercizi |
 | `016_multiple_client_plans.sql` | Schede multiple, storico piani alimentari, periodo e rilevazioni BIA iniziali/finali |
-| `018_google_calendar_connections.sql` | Connessioni OAuth Google Calendar per professionista |
+| `020_google_calendar_connections.sql` | Connessioni OAuth Google Calendar per professionista |
 
 ---
 

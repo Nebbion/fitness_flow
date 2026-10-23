@@ -39,7 +39,7 @@ NEXT_PUBLIC_APP_URL=https://<dominio>
 
 ## Database e verifica
 
-1. Applicare `supabase/migrations/018_google_calendar_connections.sql`.
+1. Applicare `supabase/migrations/020_google_calendar_connections.sql`.
 2. Distribuire l'app con le variabili d'ambiente configurate.
 3. Aprire **Impostazioni > Calendario**.
 4. Selezionare **Collega Google Calendar** e completare il consenso Google.
