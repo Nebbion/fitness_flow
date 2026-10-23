@@ -289,6 +289,12 @@ export function AppointmentModal({
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+          {isEditing && appointment?.google_attendee_status === 'declined' && (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-700 dark:text-amber-300">
+              {t('clientDeclinedGoogle')}
+            </div>
+          )}
+
           {/* Cliente */}
           <div className="space-y-2">
             <Label>{t('form.client')} *</Label>

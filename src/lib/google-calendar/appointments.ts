@@ -4,8 +4,10 @@ import {
   deleteGoogleCalendarEvent,
   GoogleCalendarApiError,
   googleEventIdForAppointment,
+  listGoogleCalendarEvents,
   refreshGoogleAccessToken,
   updateGoogleCalendarEvent,
+  type GoogleCalendarAttendeeStatus,
   type GoogleCalendarEventInput,
 } from './client'
 import { decryptGoogleToken } from './credentials'
@@ -37,7 +39,15 @@ function calendarEventFromAppointment(appointment: any, timeZone?: string): Goog
       dateTime: appointment.end_at,
       ...(timeZone ? { timeZone } : {}),
     },
-    ...(clientEmail ? { attendees: [{ email: clientEmail, displayName: clientName }] } : {}),
+    ...(clientEmail ? {
+      attendees: [{
+        email: clientEmail,
+        displayName: clientName,
+        ...(appointment.google_attendee_status
+          ? { responseStatus: appointment.google_attendee_status as GoogleCalendarAttendeeStatus }
+          : {}),
+      }],
+    } : {}),
     extendedProperties: {
       private: { fitnessflow_appointment_id: appointment.id },
     },
@@ -52,6 +62,7 @@ export async function syncAppointmentToGoogleCalendar(
     .from('appointments')
     .select(`
       id, tenant_id, staff_id, start_at, end_at, status, google_event_id,
+      google_attendee_status,
       clients (full_name, email),
       services (name),
       tenants (name, timezone)
@@ -140,7 +151,15 @@ export async function syncAppointmentToGoogleCalendar(
     }
 
     await admin.from('appointments')
-      .update({ google_event_id: eventId })
+      .update({
+        google_event_id: eventId,
+        ...(invitedClient && !appointment.google_attendee_status
+          ? {
+              google_attendee_status: 'needsAction',
+              google_attendee_status_updated_at: new Date().toISOString(),
+            }
+          : {}),
+      })
       .eq('id', appointment.id)
     await admin.from('google_calendar_connections')
       .update({ last_error: null })
@@ -158,4 +177,139 @@ export async function syncAppointmentToGoogleCalendar(
     console.error('Google Calendar appointment sync error:', error)
     return { status: 'failed', message }
   }
+}
+
+export interface GoogleCalendarResponseSyncResult {
+  checked: number
+  changed: number
+  errors: string[]
+}
+
+const GOOGLE_ATTENDEE_STATUSES = new Set<GoogleCalendarAttendeeStatus>([
+  'needsAction',
+  'accepted',
+  'declined',
+  'tentative',
+])
+
+/**
+ * Importa da Google soltanto gli stati che Google controlla direttamente:
+ * risposta dell'invitato e cancellazione dell'evento da parte dell'organizzatore.
+ * Un rifiuto dell'invitato non annulla mai l'appuntamento FitnessFlow.
+ */
+export async function syncGoogleCalendarResponses(input: {
+  tenantId: string
+  professionalId?: string
+  timeMin: string
+  timeMax: string
+}): Promise<GoogleCalendarResponseSyncResult> {
+  const admin = createAdminClient() as any
+  let connectionsQuery = admin
+    .from('google_calendar_connections')
+    .select('id, professional_id, calendar_id, refresh_token_encrypted')
+    .eq('tenant_id', input.tenantId)
+    .eq('status', 'active')
+
+  if (input.professionalId) {
+    connectionsQuery = connectionsQuery.eq('professional_id', input.professionalId)
+  }
+
+  const { data: connections, error: connectionsError } = await connectionsQuery
+  if (connectionsError) {
+    return { checked: 0, changed: 0, errors: [connectionsError.message] }
+  }
+
+  const result: GoogleCalendarResponseSyncResult = { checked: 0, changed: 0, errors: [] }
+
+  for (const connection of connections ?? []) {
+    try {
+      const token = await refreshGoogleAccessToken(
+        decryptGoogleToken(connection.refresh_token_encrypted)
+      )
+      const googleEvents = await listGoogleCalendarEvents({
+        accessToken: token.access_token,
+        calendarId: connection.calendar_id,
+        timeMin: input.timeMin,
+        timeMax: input.timeMax,
+      })
+      const eventsById = new Map(
+        googleEvents
+          .filter(event => event.id.startsWith('ff'))
+          .map(event => [event.id, event])
+      )
+
+      const { data: appointments, error: appointmentsError } = await admin
+        .from('appointments')
+        .select(`
+          id, status, google_event_id, google_attendee_status,
+          clients (email)
+        `)
+        .eq('tenant_id', input.tenantId)
+        .eq('staff_id', connection.professional_id)
+        .gte('start_at', input.timeMin)
+        .lt('start_at', input.timeMax)
+        .not('google_event_id', 'is', null)
+
+      if (appointmentsError) throw appointmentsError
+
+      for (const appointment of appointments ?? []) {
+        result.checked += 1
+        const googleEvent = eventsById.get(appointment.google_event_id)
+        if (!googleEvent) continue
+
+        if (googleEvent.status === 'cancelled') {
+          if (appointment.status !== 'cancelled') {
+            const { error } = await admin
+              .from('appointments')
+              .update({ status: 'cancelled' })
+              .eq('id', appointment.id)
+              .eq('tenant_id', input.tenantId)
+            if (error) throw error
+            result.changed += 1
+          }
+          continue
+        }
+
+        const client = appointment.clients as { email?: string | null } | null
+        const clientEmail = client?.email?.trim().toLowerCase()
+        if (!clientEmail) continue
+
+        const attendee = googleEvent.attendees?.find(
+          item => item.email?.trim().toLowerCase() === clientEmail
+        )
+        const responseStatus = attendee?.responseStatus
+        if (!responseStatus || !GOOGLE_ATTENDEE_STATUSES.has(responseStatus)) continue
+        if (responseStatus === appointment.google_attendee_status) continue
+
+        const { error } = await admin
+          .from('appointments')
+          .update({
+            google_attendee_status: responseStatus,
+            google_attendee_status_updated_at: new Date().toISOString(),
+          })
+          .eq('id', appointment.id)
+          .eq('tenant_id', input.tenantId)
+        if (error) throw error
+        result.changed += 1
+      }
+
+      await admin
+        .from('google_calendar_connections')
+        .update({ last_error: null })
+        .eq('id', connection.id)
+    } catch (error: any) {
+      const message = error?.message ?? 'Sincronizzazione delle risposte Google non riuscita'
+      result.errors.push(message)
+      await admin
+        .from('google_calendar_connections')
+        .update({
+          last_error: message,
+          ...(message.includes('invalid_grant') ? { status: 'error' } : {}),
+        })
+        .eq('id', connection.id)
+      console.error('Google Calendar response sync error:', error)
+    }
+  }
+
+  return result
 }

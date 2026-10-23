@@ -39,11 +39,19 @@ NEXT_PUBLIC_APP_URL=https://<dominio>
 
 ## Database e verifica
 
-1. Applicare `supabase/migrations/020_google_calendar_connections.sql`.
+1. Applicare `supabase/migrations/020_google_calendar_connections.sql` e `supabase/migrations/021_google_calendar_attendee_status.sql`.
 2. Distribuire l'app con le variabili d'ambiente configurate.
 3. Aprire **Impostazioni > Calendario**.
 4. Selezionare **Collega Google Calendar** e completare il consenso Google.
 5. Scegliere uno dei calendari scrivibili e salvarlo.
 6. Verificare che la tabella `google_calendar_connections` contenga una riga per il professionista. Il refresh token deve comparire soltanto nella colonna cifrata e non deve mai essere restituito dalle API browser.
+
+## Sincronizzazione delle risposte
+
+Quando il calendario Appuntamenti e aperto, FitnessFlow controlla Google Calendar all'apertura e poi ogni minuto. La risposta del cliente (`needsAction`, `accepted`, `tentative` o `declined`) viene salvata separatamente dallo stato dell'appuntamento.
+
+- Un invito rifiutato viene evidenziato come tale, ma l'appuntamento resta attivo.
+- Se l'organizzatore elimina l'evento dal proprio calendario Google, l'appuntamento viene annullato anche in FitnessFlow.
+- La semplice rimozione dell'evento da parte dell'invitato e rilevabile solo quando Google la registra come risposta `declined`.
 
 Il flusso OAuth usa `state` e PKCE, memorizzati temporaneamente in cookie HttpOnly con durata di dieci minuti. La disconnessione elimina la riga e quindi anche il token cifrato locale; gli eventuali eventi gia creati su Google non vengono rimossi.

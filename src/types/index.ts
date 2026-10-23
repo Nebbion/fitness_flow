@@ -151,6 +151,8 @@ export interface Appointment {
   end_at: string
   status: AppointmentStatus
   notes: string | null
+  google_attendee_status: 'needsAction' | 'accepted' | 'declined' | 'tentative' | null
+  google_attendee_status_updated_at: string | null
   google_event_id: string | null
   created_at: string
   updated_at: string

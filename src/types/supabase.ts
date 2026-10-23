@@ -101,6 +101,8 @@ export type Database = {
           client_id: string
           created_at: string
           end_at: string
+          google_attendee_status: string | null
+          google_attendee_status_updated_at: string | null
           google_event_id: string | null
           id: string
           notes: string | null
@@ -115,6 +117,8 @@ export type Database = {
           client_id: string
           created_at?: string
           end_at: string
+          google_attendee_status?: string | null
+          google_attendee_status_updated_at?: string | null
           google_event_id?: string | null
           id?: string
           notes?: string | null
@@ -129,6 +133,8 @@ export type Database = {
           client_id?: string
           created_at?: string
           end_at?: string
+          google_attendee_status?: string | null
+          google_attendee_status_updated_at?: string | null
           google_event_id?: string | null
           id?: string
           notes?: string | null

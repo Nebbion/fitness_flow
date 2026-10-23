@@ -30,10 +30,25 @@ export interface GoogleCalendarEventInput {
   description?: string
   start: { dateTime: string; timeZone?: string }
   end: { dateTime: string; timeZone?: string }
-  attendees?: Array<{ email: string; displayName?: string }>
+  attendees?: Array<{
+    email: string
+    displayName?: string
+    responseStatus?: GoogleCalendarAttendeeStatus
+  }>
   extendedProperties?: {
     private?: Record<string, string>
   }
+}
+
+export type GoogleCalendarAttendeeStatus = 'needsAction' | 'accepted' | 'declined' | 'tentative'
+
+export interface GoogleCalendarEventSnapshot {
+  id: string
+  status: 'confirmed' | 'tentative' | 'cancelled'
+  attendees?: Array<{
+    email?: string
+    responseStatus?: GoogleCalendarAttendeeStatus
+  }>
 }
 
 export class GoogleCalendarApiError extends Error {
@@ -246,4 +261,37 @@ export async function deleteGoogleCalendarEvent(
   // La cancellazione e idempotente: un evento gia rimosso non richiede altre azioni.
   if (response.status === 404 || response.status === 410) return
   await readGoogleResponse<Record<string, never>>(response)
+}
+
+export async function listGoogleCalendarEvents(input: {
+  accessToken: string
+  calendarId: string
+  timeMin: string
+  timeMax: string
+}) {
+  const events: GoogleCalendarEventSnapshot[] = []
+  let pageToken: string | undefined
+
+  do {
+    const url = new URL(googleCalendarEventUrl(input.calendarId))
+    url.searchParams.set('timeMin', input.timeMin)
+    url.searchParams.set('timeMax', input.timeMax)
+    url.searchParams.set('singleEvents', 'true')
+    url.searchParams.set('showDeleted', 'true')
+    url.searchParams.set('maxResults', '2500')
+    if (pageToken) url.searchParams.set('pageToken', pageToken)
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${input.accessToken}` },
+      cache: 'no-store',
+    })
+    const data = await readGoogleResponse<{
+      items?: GoogleCalendarEventSnapshot[]
+      nextPageToken?: string
+    }>(response)
+    events.push(...(data.items ?? []))
+    pageToken = data.nextPageToken
+  } while (pageToken)
+
+  return events
 }

@@ -41,7 +41,8 @@ export default async function AppointmentsPage({ params, searchParams }: PagePro
   let query = supabase
     .from('appointments')
     .select(`
-      id, start_at, end_at, status, notes,
+      id, client_id, staff_id, service_id, start_at, end_at, status, notes,
+      google_attendee_status, google_attendee_status_updated_at,
       clients (id, full_name, phone, email),
       services (id, name, color, duration_min),
       profiles!appointments_staff_id_fkey (id, full_name)

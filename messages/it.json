@@ -289,6 +289,8 @@
     "updateSuccess": "Appuntamento aggiornato con successo",
     "googleInviteSent": "Invito Google Calendar inviato al cliente",
     "googleSyncWarning": "Appuntamento salvato, ma la sincronizzazione con Google Calendar non è riuscita",
+    "clientDeclinedShort": "Invito rifiutato",
+    "clientDeclinedGoogle": "Il cliente ha rifiutato l'invito Google Calendar. L'appuntamento resta attivo.",
     "serviceDurationInvalid": "Imposta per il servizio una durata di almeno 5 minuti",
     "cancelConfirm": "Sei sicuro di voler annullare questo appuntamento?",
     "cancelSuccess": "Appuntamento annullato",

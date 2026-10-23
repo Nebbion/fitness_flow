@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -44,6 +44,40 @@ export function AppointmentsCalendar({
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
   const [selectedSlot, setSelectedSlot] = useState<{ start: Date; end: Date } | null>(null)
 
+  useEffect(() => {
+    let disposed = false
+    let inFlight = false
+    const targetDate = new Date(initialDate)
+    const from = new Date(targetDate.getFullYear(), targetDate.getMonth() - 1, 1)
+    const to = new Date(targetDate.getFullYear(), targetDate.getMonth() + 2, 1)
+
+    async function syncGoogleResponses() {
+      if (inFlight || disposed) return
+      inFlight = true
+      try {
+        const response = await fetch('/api/integrations/google-calendar/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from: from.toISOString(), to: to.toISOString() }),
+        })
+        if (!response.ok) return
+        const result = await response.json()
+        if (!disposed && result.changed > 0) router.refresh()
+      } catch {
+        // La sincronizzazione verra ritentata al prossimo intervallo.
+      } finally {
+        inFlight = false
+      }
+    }
+
+    void syncGoogleResponses()
+    const interval = window.setInterval(syncGoogleResponses, 60_000)
+    return () => {
+      disposed = true
+      window.clearInterval(interval)
+    }
+  }, [initialDate, router])
+
   // Converti appuntamenti in eventi FullCalendar
   const events = appointments.map(appt => ({
     id: appt.id,
@@ -53,7 +87,11 @@ export function AppointmentsCalendar({
     backgroundColor: appt.services?.color ?? '#2563EB',
     borderColor: appt.services?.color ?? '#2563EB',
     extendedProps: { appointment: appt },
-    classNames: appt.status === 'cancelled' ? ['opacity-40 line-through'] : [],
+    classNames: appt.status === 'cancelled'
+      ? ['opacity-40', 'line-through']
+      : appt.google_attendee_status === 'declined'
+        ? ['ring-2', 'ring-amber-400', 'ring-inset']
+        : [],
   }))
 
   // Click su slot vuoto → apri modal per creazione
@@ -172,6 +210,11 @@ export function AppointmentsCalendar({
               {arg.event.extendedProps.appointment?.services?.name && (
                 <div className="truncate text-white/80" style={{ fontSize: '10px' }}>
                   {arg.event.extendedProps.appointment.services.name}
+                </div>
+              )}
+              {arg.event.extendedProps.appointment?.google_attendee_status === 'declined' && (
+                <div className="truncate font-semibold text-amber-100" style={{ fontSize: '10px' }}>
+                  {t('clientDeclinedShort')}
                 </div>
               )}
             </div>
