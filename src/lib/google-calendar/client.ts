@@ -24,6 +24,28 @@ interface TokenResponse {
   token_type?: string
 }
 
+export interface GoogleCalendarEventInput {
+  id?: string
+  summary: string
+  description?: string
+  start: { dateTime: string; timeZone?: string }
+  end: { dateTime: string; timeZone?: string }
+  attendees?: Array<{ email: string; displayName?: string }>
+  extendedProperties?: {
+    private?: Record<string, string>
+  }
+}
+
+export class GoogleCalendarApiError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'GoogleCalendarApiError'
+    this.status = status
+  }
+}
+
 function configuredClient() {
   const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID
   const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET
@@ -75,7 +97,10 @@ async function readGoogleResponse<T>(response: Response): Promise<T> {
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
     const message = data.error_description ?? data.error?.message ?? data.error ?? `Google API error (${response.status})`
-    throw new Error(typeof message === 'string' ? message : 'Errore Google Calendar')
+    throw new GoogleCalendarApiError(
+      typeof message === 'string' ? message : 'Errore Google Calendar',
+      response.status
+    )
   }
   return data as T
 }
@@ -153,4 +178,72 @@ export async function listWritableGoogleCalendars(accessToken: string) {
       timeZone: typeof item.timeZone === 'string' ? item.timeZone : null,
       accessRole: String(item.accessRole),
     } satisfies GoogleCalendarListItem))
+}
+
+function googleCalendarEventUrl(calendarId: string, eventId?: string) {
+  const base = `${CALENDAR_API_URL}/calendars/${encodeURIComponent(calendarId)}/events`
+  return eventId ? `${base}/${encodeURIComponent(eventId)}` : base
+}
+
+function withSendUpdates(url: string) {
+  const result = new URL(url)
+  result.searchParams.set('sendUpdates', 'all')
+  return result
+}
+
+export function googleEventIdForAppointment(appointmentId: string) {
+  return `ff${appointmentId.replaceAll('-', '').toLowerCase()}`
+}
+
+export async function createGoogleCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  event: GoogleCalendarEventInput
+) {
+  const response = await fetch(withSendUpdates(googleCalendarEventUrl(calendarId)), {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(event),
+    cache: 'no-store',
+  })
+  return readGoogleResponse<{ id: string }>(response)
+}
+
+export async function updateGoogleCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  eventId: string,
+  event: GoogleCalendarEventInput
+) {
+  const update = { ...event }
+  delete update.id
+  const response = await fetch(withSendUpdates(googleCalendarEventUrl(calendarId, eventId)), {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(update),
+    cache: 'no-store',
+  })
+  return readGoogleResponse<{ id: string }>(response)
+}
+
+export async function deleteGoogleCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  eventId: string
+) {
+  const response = await fetch(withSendUpdates(googleCalendarEventUrl(calendarId, eventId)), {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: 'no-store',
+  })
+
+  // La cancellazione e idempotente: un evento gia rimosso non richiede altre azioni.
+  if (response.status === 404 || response.status === 410) return
+  await readGoogleResponse<Record<string, never>>(response)
 }

@@ -124,17 +124,26 @@ export function AppointmentModal({
         body: JSON.stringify(data),
       })
 
+      const result = await res.json()
       if (!res.ok) {
-        const err = await res.json()
-        if (err.error?.includes('overlap') || err.error?.includes('conflict')) {
+        if (result.error?.includes('overlap') || result.error?.includes('conflict')) {
           toast.error(t('conflict'))
         } else {
-          toast.error(err.error ?? 'Errore')
+          toast.error(result.error ?? 'Errore')
         }
         return
       }
 
       toast.success(isEditing ? t('updateSuccess') : t('createSuccess'))
+      if (result.googleCalendar?.status === 'failed') {
+        toast.warning(t('googleSyncWarning'))
+      } else if (
+        !isEditing &&
+        result.googleCalendar?.status === 'synced' &&
+        result.googleCalendar?.invitedClient
+      ) {
+        toast.success(t('googleInviteSent'))
+      }
       onSaved()
     } catch (err: any) {
       toast.error(err.message)
@@ -153,7 +162,11 @@ export function AppointmentModal({
         body: JSON.stringify({ status: 'cancelled' }),
       })
       if (!res.ok) throw new Error()
+      const result = await res.json()
       toast.success(t('cancelSuccess'))
+      if (result.googleCalendar?.status === 'failed') {
+        toast.warning(t('googleSyncWarning'))
+      }
       onSaved()
     } catch {
       toast.error('Errore durante l\'annullamento')

@@ -85,6 +85,10 @@ export function AppointmentsCalendar({
         body: JSON.stringify({ start_at: newStart, end_at: newEnd }),
       })
       if (!res.ok) throw new Error('Aggiornamento fallito')
+      const result = await res.json()
+      if (result.googleCalendar?.status === 'failed') {
+        toast.warning(t('googleSyncWarning'))
+      }
       router.refresh()
     } catch {
       toast.error('Impossibile aggiornare l\'appuntamento')

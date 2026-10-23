@@ -285,6 +285,8 @@
     "conflict": "Conflict: staff already has an appointment at this time",
     "createSuccess": "Appointment created successfully",
     "updateSuccess": "Appointment updated successfully",
+    "googleInviteSent": "Google Calendar invitation sent to the client",
+    "googleSyncWarning": "Appointment saved, but Google Calendar synchronization failed",
     "cancelConfirm": "Are you sure you want to cancel this appointment?",
     "cancelSuccess": "Appointment cancelled",
     "noAppointments": "No appointments in this period"

@@ -285,6 +285,8 @@
     "conflict": "Conflitto: lo staff ha già un appuntamento in questo orario",
     "createSuccess": "Appuntamento creato con successo",
     "updateSuccess": "Appuntamento aggiornato con successo",
+    "googleInviteSent": "Invito Google Calendar inviato al cliente",
+    "googleSyncWarning": "Appuntamento salvato, ma la sincronizzazione con Google Calendar non è riuscita",
     "cancelConfirm": "Sei sicuro di voler annullare questo appuntamento?",
     "cancelSuccess": "Appuntamento annullato",
     "noAppointments": "Nessun appuntamento in questo periodo"

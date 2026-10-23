@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAppointmentSchema } from '@/schemas'
 import { sendAppointmentConfirmation } from '@/lib/whatsapp/notifications'
+import { syncAppointmentToGoogleCalendar } from '@/lib/google-calendar/appointments'
 
 // GET /api/appointments
 export async function GET(request: NextRequest) {
@@ -111,7 +112,20 @@ export async function POST(request: NextRequest) {
       console.error('WhatsApp appointment confirmation error:', error)
     }
 
-    return NextResponse.json({ data, id: data.id }, { status: 201 })
+    // L'appuntamento resta salvato anche se Google non e disponibile: il risultato
+    // viene restituito alla UI per mostrare un avviso senza perdere la prenotazione.
+    let googleCalendar
+    try {
+      googleCalendar = await syncAppointmentToGoogleCalendar(data.id)
+    } catch (error: any) {
+      console.error('Unexpected Google Calendar appointment sync error:', error)
+      googleCalendar = {
+        status: 'failed' as const,
+        message: error?.message ?? 'Sincronizzazione Google Calendar non riuscita',
+      }
+    }
+
+    return NextResponse.json({ data, id: data.id, googleCalendar }, { status: 201 })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

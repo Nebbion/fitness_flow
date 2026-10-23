@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { updateAppointmentSchema } from '@/schemas'
+import { syncAppointmentToGoogleCalendar } from '@/lib/google-calendar/appointments'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -70,7 +71,17 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       throw error
     }
 
-    return NextResponse.json({ data })
+    let googleCalendar
+    try {
+      googleCalendar = await syncAppointmentToGoogleCalendar(data.id)
+    } catch (syncError: any) {
+      console.error('Unexpected Google Calendar appointment sync error:', syncError)
+      googleCalendar = {
+        status: 'failed' as const,
+        message: syncError?.message ?? 'Sincronizzazione Google Calendar non riuscita',
+      }
+    }
+    return NextResponse.json({ data, googleCalendar })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
