@@ -275,6 +275,8 @@
       "service": "Service",
       "servicePlaceholder": "Select service...",
       "date": "Date",
+      "hour": "Hours",
+      "minute": "Minutes",
       "startTime": "Start time",
       "endTime": "End time",
       "notes": "Notes",

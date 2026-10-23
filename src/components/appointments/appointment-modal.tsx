@@ -34,6 +34,82 @@ function toDatetimeLocal(date: Date | string): string {
     .slice(0, 16)
 }
 
+const HOURS = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'))
+const MINUTES = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'))
+
+function roundToFiveMinutes(date: Date | string) {
+  const rounded = new Date(date)
+  rounded.setSeconds(0, 0)
+  rounded.setMinutes(Math.round(rounded.getMinutes() / 5) * 5)
+  return rounded.toISOString()
+}
+
+function localDateTimeParts(value?: string) {
+  if (!value) return { date: '', hour: '09', minute: '00' }
+  const local = toDatetimeLocal(value)
+  return {
+    date: local.slice(0, 10),
+    hour: local.slice(11, 13),
+    minute: local.slice(14, 16),
+  }
+}
+
+function AppointmentDateTimeInput({
+  value,
+  onChange,
+  onBlur,
+  inputRef,
+  labels,
+}: {
+  value?: string
+  onChange: (value: string) => void
+  onBlur: () => void
+  inputRef: (element: HTMLInputElement | null) => void
+  labels: { date: string; hour: string; minute: string }
+}) {
+  const parts = localDateTimeParts(value)
+
+  function update(partial: Partial<typeof parts>) {
+    const next = { ...parts, ...partial }
+    if (!next.date) return
+    onChange(new Date(`${next.date}T${next.hour}:${next.minute}:00`).toISOString())
+  }
+
+  const selectClassName = 'h-10 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_68px_auto_68px] items-center gap-2">
+      <Input
+        ref={inputRef}
+        type="date"
+        aria-label={labels.date}
+        value={parts.date}
+        onBlur={onBlur}
+        onChange={event => update({ date: event.target.value })}
+      />
+      <select
+        aria-label={labels.hour}
+        title={labels.hour}
+        className={selectClassName}
+        value={parts.hour}
+        onChange={event => update({ hour: event.target.value })}
+      >
+        {HOURS.map(hour => <option key={hour} value={hour}>{hour}</option>)}
+      </select>
+      <span className="text-sm font-semibold text-muted-foreground">:</span>
+      <select
+        aria-label={labels.minute}
+        title={labels.minute}
+        className={selectClassName}
+        value={parts.minute}
+        onChange={event => update({ minute: event.target.value })}
+      >
+        {MINUTES.map(minute => <option key={minute} value={minute}>{minute}</option>)}
+      </select>
+    </div>
+  )
+}
+
 export function AppointmentModal({
   open, onClose, locale, tenantId, userId, role,
   staffList, services, appointment, defaultClient, defaultSlot, onSaved,
@@ -78,8 +154,8 @@ export function AppointmentModal({
       setValue('client_id', appointment.client_id)
       setValue('staff_id', appointment.staff_id)
       setValue('service_id', appointment.service_id ?? '')
-      setValue('start_at', new Date(appointment.start_at).toISOString())
-      setValue('end_at', new Date(appointment.end_at).toISOString())
+      setValue('start_at', roundToFiveMinutes(appointment.start_at))
+      setValue('end_at', roundToFiveMinutes(appointment.end_at))
       setValue('notes', appointment.notes ?? '')
     } else if (defaultSlot) {
       setSelectedClient(defaultClient ?? null)
@@ -87,8 +163,8 @@ export function AppointmentModal({
         staff_id: role === 'STAFF' ? userId : (staffList[0]?.id ?? ''),
         client_id: defaultClient?.id ?? '',
         service_id: '',
-        start_at: defaultSlot.start.toISOString(),
-        end_at: defaultSlot.end.toISOString(),
+        start_at: roundToFiveMinutes(defaultSlot.start),
+        end_at: roundToFiveMinutes(defaultSlot.end),
         notes: '',
       })
     }
@@ -305,24 +381,23 @@ export function AppointmentModal({
           )}
 
           {/* Data e orari */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3">
             <div className="space-y-2">
               <Label>{t('form.startTime')}</Label>
               <Controller
                 control={control}
                 name="start_at"
                 render={({ field }) => (
-                  <Input
-                    ref={field.ref}
-                    name={field.name}
-                    type="datetime-local"
-                    step={300}
-                    value={field.value ? toDatetimeLocal(field.value) : ''}
+                  <AppointmentDateTimeInput
+                    inputRef={field.ref}
+                    value={field.value}
                     onBlur={field.onBlur}
-                    onChange={event => {
-                      const value = event.target.value
-                        ? new Date(event.target.value).toISOString()
-                        : ''
+                    labels={{
+                      date: t('form.date'),
+                      hour: t('form.hour'),
+                      minute: t('form.minute'),
+                    }}
+                    onChange={value => {
                       field.onChange(value)
                       updateEndFromService(value, getValues('service_id'))
                     }}
@@ -337,16 +412,16 @@ export function AppointmentModal({
                 control={control}
                 name="end_at"
                 render={({ field }) => (
-                  <Input
-                    ref={field.ref}
-                    name={field.name}
-                    type="datetime-local"
-                    step={300}
-                    value={field.value ? toDatetimeLocal(field.value) : ''}
+                  <AppointmentDateTimeInput
+                    inputRef={field.ref}
+                    value={field.value}
                     onBlur={field.onBlur}
-                    onChange={event => field.onChange(
-                      event.target.value ? new Date(event.target.value).toISOString() : ''
-                    )}
+                    labels={{
+                      date: t('form.date'),
+                      hour: t('form.hour'),
+                      minute: t('form.minute'),
+                    }}
+                    onChange={field.onChange}
                   />
                 )}
               />
