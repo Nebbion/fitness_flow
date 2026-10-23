@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
@@ -10,7 +10,6 @@ import { createAppointmentSchema, type CreateAppointmentInput } from '@/schemas'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/index'
 import { createClient as createSupabaseClient } from '@/lib/supabase/client'
-import { formatDateTime } from '@/lib/utils'
 import type { UserRole } from '@/types'
 
 interface AppointmentModalProps {
@@ -50,14 +49,25 @@ export function AppointmentModal({
   const [selectedClient, setSelectedClient] = useState<any>(null)
   const [searchLoading, setSearchLoading] = useState(false)
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<CreateAppointmentInput>({
+  const {
+    control,
+    getValues,
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<CreateAppointmentInput>({
     resolver: zodResolver(createAppointmentSchema),
     defaultValues: {
+      client_id: '',
       staff_id: role === 'STAFF' ? userId : (staffList[0]?.id ?? ''),
+      service_id: '',
+      start_at: '',
+      end_at: '',
+      notes: '',
     },
   })
-
-  const selectedServiceId = watch('service_id')
 
   // Inizializza il form quando cambia l'appuntamento o lo slot
   useEffect(() => {
@@ -76,23 +86,31 @@ export function AppointmentModal({
       reset({
         staff_id: role === 'STAFF' ? userId : (staffList[0]?.id ?? ''),
         client_id: defaultClient?.id ?? '',
+        service_id: '',
         start_at: defaultSlot.start.toISOString(),
         end_at: defaultSlot.end.toISOString(),
+        notes: '',
       })
     }
   }, [open, appointment, defaultClient, defaultSlot, reset, role, staffList, userId, setValue])
 
-  // Auto-calcola end_at in base al servizio selezionato
-  useEffect(() => {
-    const service = services.find(s => s.id === selectedServiceId)
-    if (service && !isEditing) {
-      const start = watch('start_at')
-      if (start) {
-        const end = new Date(new Date(start).getTime() + service.duration_min * 60000)
-        setValue('end_at', end.toISOString())
-      }
+  function updateEndFromService(startAt: string | undefined, serviceId: string | undefined) {
+    if (!startAt || !serviceId) return
+
+    const service = services.find(item => item.id === serviceId)
+    const durationMinutes = Number(service?.duration_min)
+    const start = new Date(startAt)
+    if (!service || !Number.isFinite(durationMinutes) || durationMinutes < 5 || Number.isNaN(start.getTime())) {
+      if (service && durationMinutes < 5) toast.warning(t('serviceDurationInvalid'))
+      return
     }
-  }, [selectedServiceId])
+
+    setValue(
+      'end_at',
+      new Date(start.getTime() + durationMinutes * 60_000).toISOString(),
+      { shouldDirty: true, shouldValidate: true }
+    )
+  }
 
   // Ricerca clienti con debounce
   useEffect(() => {
@@ -258,7 +276,9 @@ export function AppointmentModal({
             <Label>{t('form.service')}</Label>
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register('service_id')}
+              {...register('service_id', {
+                onChange: event => updateEndFromService(getValues('start_at'), event.target.value),
+              })}
             >
               <option value="">{t('form.servicePlaceholder')}</option>
               {services.map(s => (
@@ -288,23 +308,47 @@ export function AppointmentModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>{t('form.startTime')}</Label>
-              <Input
-                type="datetime-local"
-                {...register('start_at', {
-                  setValueAs: v => v ? new Date(v).toISOString() : '',
-                })}
-                defaultValue={defaultSlot ? toDatetimeLocal(defaultSlot.start) : undefined}
+              <Controller
+                control={control}
+                name="start_at"
+                render={({ field }) => (
+                  <Input
+                    ref={field.ref}
+                    name={field.name}
+                    type="datetime-local"
+                    step={300}
+                    value={field.value ? toDatetimeLocal(field.value) : ''}
+                    onBlur={field.onBlur}
+                    onChange={event => {
+                      const value = event.target.value
+                        ? new Date(event.target.value).toISOString()
+                        : ''
+                      field.onChange(value)
+                      updateEndFromService(value, getValues('service_id'))
+                    }}
+                  />
+                )}
               />
               {errors.start_at && <p className="text-xs text-destructive">Obbligatorio</p>}
             </div>
             <div className="space-y-2">
               <Label>{t('form.endTime')}</Label>
-              <Input
-                type="datetime-local"
-                {...register('end_at', {
-                  setValueAs: v => v ? new Date(v).toISOString() : '',
-                })}
-                defaultValue={defaultSlot ? toDatetimeLocal(defaultSlot.end) : undefined}
+              <Controller
+                control={control}
+                name="end_at"
+                render={({ field }) => (
+                  <Input
+                    ref={field.ref}
+                    name={field.name}
+                    type="datetime-local"
+                    step={300}
+                    value={field.value ? toDatetimeLocal(field.value) : ''}
+                    onBlur={field.onBlur}
+                    onChange={event => field.onChange(
+                      event.target.value ? new Date(event.target.value).toISOString() : ''
+                    )}
+                  />
+                )}
               />
               {errors.end_at && <p className="text-xs text-destructive">Obbligatorio</p>}
             </div>
