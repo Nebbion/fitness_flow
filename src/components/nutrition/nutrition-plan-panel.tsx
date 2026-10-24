@@ -14,7 +14,7 @@ import { NutritionPlanImport, type ImportedNutritionDraft } from './nutrition-pl
 
 const newMeal = (name = 'Colazione'): NutritionMeal => ({ id: crypto.randomUUID(), name, time: '', notes: '', alternatives: '', foods: [] })
 const newDay = (label = 'Giorno tipo'): NutritionDay => ({ id: crypto.randomUUID(), label, meals: [newMeal()] })
-const newFood = (): NutritionFood => ({ id: crypto.randomUUID(), name: '', quantity: '', calories: null, proteinG: null, carbsG: null, fatG: null, notes: '' })
+const newFood = (): NutritionFood => ({ id: crypto.randomUUID(), name: '', quantity: '', mode: 'cumulative', alternativeGroup: '', calories: null, proteinG: null, carbsG: null, fatG: null, notes: '' })
 
 function nullableNumber(value: string) {
   if (value.trim() === '') return null
@@ -248,6 +248,18 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
                 <Input value={food.quantity} onChange={event => updateFood(dayIndex, mealIndex, foodIndex, { quantity: event.target.value })} placeholder="Quantità" />
                 {(['calories', 'proteinG', 'carbsG', 'fatG'] as const).map((key, index) => <Input key={key} type="number" min={0} max={10000} value={food[key] ?? ''} onChange={event => updateFood(dayIndex, mealIndex, foodIndex, { [key]: nullableNumber(event.target.value) })} placeholder={['kcal', 'P g', 'C g', 'G g'][index]} aria-label={['Calorie', 'Proteine', 'Carboidrati', 'Grassi'][index]} />)}
                 <Button size="icon" variant="ghost" aria-label="Elimina alimento" onClick={() => updateMeal(dayIndex, mealIndex, { foods: meal.foods.filter(item => item.id !== food.id) })}><Trash2 /></Button>
+                <div className="col-span-2 grid gap-2 md:col-span-full md:grid-cols-[12rem_minmax(0,1fr)]">
+                  <select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={food.mode ?? 'cumulative'}
+                    aria-label="Tipo di alimento" onChange={event => updateFood(dayIndex, mealIndex, foodIndex, {
+                      mode: event.target.value as NutritionFood['mode'], alternativeGroup: event.target.value === 'cumulative' ? '' : food.alternativeGroup,
+                    })}>
+                    <option value="cumulative">Da consumare</option>
+                    <option value="alternative">Alternativa</option>
+                  </select>
+                  {(food.mode ?? 'cumulative') === 'alternative' && <Input value={food.alternativeGroup ?? ''}
+                    onChange={event => updateFood(dayIndex, mealIndex, foodIndex, { alternativeGroup: event.target.value })}
+                    placeholder="Gruppo scelta, es. Carboidrati" aria-label="Gruppo di alternative" />}
+                </div>
                 <Input className="col-span-2 md:col-span-full" value={food.notes} onChange={event => updateFood(dayIndex, mealIndex, foodIndex, { notes: event.target.value })} placeholder="Note alimento (facoltative)" />
               </div>)}
               <div className="flex flex-wrap items-center justify-between gap-2"><Button size="sm" variant="outline" onClick={() => updateMeal(dayIndex, mealIndex, { foods: [...meal.foods, newFood()] })}><Plus />Alimento</Button><NutritionTotalsLine totals={sumNutritionFoods(meal.foods)} compact /></div>

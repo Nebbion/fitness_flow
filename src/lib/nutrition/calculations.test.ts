@@ -27,7 +27,7 @@ test('initial and final BIA measurements remain independent with explicit bounds
 
 const food = (patch: Partial<NutritionFood>): NutritionFood => ({
   id: crypto.randomUUID(), name: 'Alimento', quantity: '', calories: null,
-  proteinG: null, carbsG: null, fatG: null, notes: '', ...patch,
+  mode: 'cumulative', alternativeGroup: '', proteinG: null, carbsG: null, fatG: null, notes: '', ...patch,
 })
 
 const meal = (foods: NutritionFood[]): NutritionMeal => ({
@@ -40,6 +40,18 @@ test('somma un nutriente soltanto quando tutti i valori necessari sono inseriti'
     food({ calories: 120, proteinG: null }),
   ])
   assert.deepEqual(totals, { calories: 420, proteinG: null, carbsG: null, fatG: null })
+})
+
+test('i totali includono i cibi cumulativi ma non sommano le alternative', () => {
+  const totals = sumNutritionFoods([
+    food({ name: 'Verdure', calories: 80 }),
+    food({ name: 'Pasta', calories: 350, mode: 'alternative', alternativeGroup: 'Carboidrati' }),
+    food({ name: 'Riso', calories: 320, mode: 'alternative', alternativeGroup: 'Carboidrati' }),
+  ])
+  assert.equal(totals.calories, 80)
+  assert.equal(sumNutritionFoods([
+    food({ calories: 350, mode: 'alternative', alternativeGroup: 'Carboidrati' }),
+  ]).calories, null)
 })
 
 test('calcola totali giornalieri e media senza inventare dati mancanti', () => {

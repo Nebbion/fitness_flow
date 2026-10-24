@@ -1,4 +1,4 @@
-import type { NutritionDay } from '@/lib/nutrition/schemas'
+import type { NutritionDay, NutritionFood } from '@/lib/nutrition/schemas'
 import type { PlanMeasurements } from '@/lib/nutrition/schemas'
 import { PlanMeasurementsComparison } from './plan-measurements'
 import { ChevronDown } from 'lucide-react'
@@ -29,6 +29,21 @@ export function NutritionTotalsLine({ totals, compact = false }: { totals: Nutri
     <span>P {value(totals.proteinG, ' g')}</span>
     <span>C {value(totals.carbsG, ' g')}</span>
     <span>G {value(totals.fatG, ' g')}</span>
+  </div>
+}
+
+function NutritionFoodsTable({ foods }: { foods: NutritionFood[] }) {
+  if (foods.length === 0) return null
+  return <div className="mt-2 overflow-hidden rounded border">
+    <table className="w-full text-left text-xs">
+      <thead className="bg-muted"><tr><th className="px-3 py-2">Alimento</th><th className="px-3 py-2">Quantità</th><th className="px-3 py-2 text-right">kcal</th><th className="hidden px-3 py-2 text-right sm:table-cell">P / C / G</th></tr></thead>
+      <tbody className="divide-y">{foods.map(food => <tr key={food.id}>
+        <td className="px-3 py-2"><span className="font-medium">{food.name}</span>{food.notes && <span className="block text-muted-foreground">{food.notes}</span>}</td>
+        <td className="px-3 py-2">{food.quantity || '—'}</td>
+        <td className="px-3 py-2 text-right">{food.calories ?? '—'}</td>
+        <td className="hidden px-3 py-2 text-right sm:table-cell">{value(food.proteinG, '')} / {value(food.carbsG, '')} / {value(food.fatG, '')}</td>
+      </tr>)}</tbody>
+    </table>
   </div>
 }
 
@@ -72,25 +87,26 @@ export function NutritionPlanContent({ plan, tenant, client }: {
           <NutritionTotalsLine totals={dayTotals} compact />
         </summary>
         <div className="space-y-5 p-3 sm:p-5">
-          {day.meals.map(meal => <details open key={meal.id} className="nutrition-meal break-inside-avoid-page border-l-4 pl-3">
+          {day.meals.map(meal => {
+            const cumulativeFoods = meal.foods.filter(food => food.mode !== 'alternative')
+            const alternativeGroups = meal.foods.filter(food => food.mode === 'alternative').reduce((groups, food) => {
+              const label = food.alternativeGroup?.trim() || 'Altre alternative'
+              groups.set(label, [...(groups.get(label) ?? []), food])
+              return groups
+            }, new Map<string, NutritionFood[]>())
+            return <details open key={meal.id} className="nutrition-meal break-inside-avoid-page border-l-4 pl-3">
             <summary className="nutrition-meal-heading flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 p-3 [&::-webkit-details-marker]:hidden">
               <h3 className="flex items-center gap-2 font-medium"><ChevronDown className="nutrition-chevron h-4 w-4 shrink-0 print:hidden" /><span className="break-words">{meal.name}{meal.time ? <span className="ml-2 text-xs font-normal text-muted-foreground">{meal.time}</span> : null}</span></h3>
               <NutritionTotalsLine totals={sumNutritionFoods(meal.foods)} compact />
             </summary>
-            {meal.foods.length > 0 && <div className="mt-2 overflow-hidden rounded border">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted"><tr><th className="px-3 py-2">Alimento</th><th className="px-3 py-2">Quantità</th><th className="px-3 py-2 text-right">kcal</th><th className="hidden px-3 py-2 text-right sm:table-cell">P / C / G</th></tr></thead>
-                <tbody className="divide-y">{meal.foods.map(food => <tr key={food.id}>
-                  <td className="px-3 py-2"><span className="font-medium">{food.name}</span>{food.notes && <span className="block text-muted-foreground">{food.notes}</span>}</td>
-                  <td className="px-3 py-2">{food.quantity || '—'}</td>
-                  <td className="px-3 py-2 text-right">{food.calories ?? '—'}</td>
-                  <td className="hidden px-3 py-2 text-right sm:table-cell">{value(food.proteinG, '')} / {value(food.carbsG, '')} / {value(food.fatG, '')}</td>
-                </tr>)}</tbody>
-              </table>
-            </div>}
+            <NutritionFoodsTable foods={cumulativeFoods} />
+            {Array.from(alternativeGroups.entries()).map(([group, foods]) => <section key={group} className="mt-3 border-l-2 border-primary/60 pl-3">
+              <p className="text-xs font-semibold">Scegli una alternativa · {group}</p>
+              <NutritionFoodsTable foods={foods} />
+            </section>)}
             {meal.notes && <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">{meal.notes}</p>}
             {meal.alternatives && <p className="mt-2 whitespace-pre-wrap border-l-2 border-primary pl-3 text-xs leading-5"><strong>Alternative:</strong> {meal.alternatives}</p>}
-          </details>)}
+          </details>})}
         </div>
       </details>
     })}

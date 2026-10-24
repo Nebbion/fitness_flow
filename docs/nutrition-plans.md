@@ -20,7 +20,7 @@ La funzione e disponibile per tenant con professione `nutritionist`.
 1. Applicare `supabase/migrations/013_nutrition_plans.sql` con `npx supabase db push`.
 2. Aprire **Dashboard > Alimentazione** e scegliere un cliente.
 3. Inserire obiettivo, indicazioni, giorni, pasti e alimenti.
-4. Calorie e macronutrienti vengono sommati solo quando sono compilati. Le alternative testuali non entrano nei totali.
+4. Ogni alimento puo essere marcato come **Da consumare** oppure **Alternativa** e associato a un gruppo di scelta. Calorie e macronutrienti vengono sommati solo per gli alimenti da consumare e soltanto quando sono compilati; le alternative non entrano nei totali.
 5. Dopo il salvataggio il piano appare in **Portale cliente > Alimentazione** ed e stampabile in A4.
 
 ## Importazione AI
@@ -28,7 +28,7 @@ La funzione e disponibile per tenant con professione `nutritionist`.
 Applicare `024_nutrition_imports_meal_ideas.sql` e configurare `OPENAI_API_KEY`.
 Nel pannello del piano, **Importa piano con AI** accetta PDF, JPG, PNG e WebP. I file sono privati e temporanei: vengono rimossi dallo storage al termine dell'analisi.
 
-Il documento viene trattato esclusivamente come dato non attendibile. L'estrattore ignora eventuali istruzioni contenute nel file, non inventa calorie o macronutrienti assenti e restituisce una bozza con avvisi. Il professionista deve applicare la bozza, controllarla nell'editor e salvarla esplicitamente.
+Il documento viene trattato esclusivamente come dato non attendibile. L'estrattore ignora eventuali istruzioni contenute nel file, non inventa calorie o macronutrienti assenti e restituisce una bozza con avvisi. Prima separa i giorni e poi associa i pasti al giorno corretto. Le voci collegate da “oppure” vengono raggruppate come alternative della stessa categoria (per esempio carboidrati, proteine o grassi), mentre gli alimenti da consumare insieme restano cumulativi. Il professionista deve applicare la bozza, controllarla nell'editor e salvarla esplicitamente.
 
 L'importazione consuma una generazione dalla quota AI mensile del piano.
 

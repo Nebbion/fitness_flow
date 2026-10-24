@@ -10,8 +10,9 @@ export interface NutritionTotals {
 const nutrientKeys = ['calories', 'proteinG', 'carbsG', 'fatG'] as const
 
 export function sumNutritionFoods(foods: NutritionFood[]): NutritionTotals {
+  const cumulativeFoods = foods.filter(food => food.mode !== 'alternative')
   return Object.fromEntries(nutrientKeys.map(key => {
-    const values = foods.map(food => food[key])
+    const values = cumulativeFoods.map(food => food[key])
     const complete = values.length > 0 && values.every((value): value is number => typeof value === 'number')
     return [key, complete ? values.reduce((sum, value) => sum + value, 0) : null]
   })) as unknown as NutritionTotals

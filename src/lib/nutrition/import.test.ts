@@ -23,11 +23,14 @@ test('la bozza importata riceve identificativi nuovi senza inventare nutrienti',
     title: 'Piano importato', objective: '', guidelines: '', targetCalories: null, warnings: [],
     days: [{ label: 'Giorno tipo', meals: [{
       name: 'Colazione', time: '', notes: '', alternatives: '', foods: [{
-        name: 'Avena', quantity: '80 g', calories: null, proteinG: null, carbsG: null, fatG: null, notes: '',
+        name: 'Avena', quantity: '80 g', mode: 'alternative', alternativeGroup: 'Carboidrati',
+        calories: null, proteinG: null, carbsG: null, fatG: null, notes: '',
       }],
     }] }],
   })
   assert.match(draft.days[0].id, /^[0-9a-f-]{36}$/)
   assert.match(draft.days[0].meals[0].foods[0].id, /^[0-9a-f-]{36}$/)
   assert.equal(draft.days[0].meals[0].foods[0].calories, null)
+  assert.equal(draft.days[0].meals[0].foods[0].mode, 'alternative')
+  assert.equal(draft.days[0].meals[0].foods[0].alternativeGroup, 'Carboidrati')
 })

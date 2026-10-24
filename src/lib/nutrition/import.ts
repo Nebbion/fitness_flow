@@ -38,6 +38,8 @@ export const nutritionPlanExtractionSchema = z.object({
       foods: z.array(z.object({
         name: z.string().trim().min(1).max(160),
         quantity: z.string().trim().max(80),
+        mode: z.enum(['cumulative', 'alternative']),
+        alternativeGroup: z.string().trim().max(120),
         calories: nullableNutrient,
         proteinG: nullableNutrient,
         carbsG: nullableNutrient,

@@ -22,6 +22,8 @@ export const nutritionFoodSchema = z.object({
   id: z.string().uuid(),
   name: z.string().trim().min(1).max(160),
   quantity: z.string().trim().max(80).default(''),
+  mode: z.enum(['cumulative', 'alternative']).default('cumulative'),
+  alternativeGroup: z.string().trim().max(120).default(''),
   calories: optionalNutrient,
   proteinG: optionalNutrient,
   carbsG: optionalNutrient,

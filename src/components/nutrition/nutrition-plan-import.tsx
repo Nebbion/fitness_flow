@@ -151,7 +151,12 @@ export function NutritionPlanImport({ onApply }: { onApply: (draft: ImportedNutr
           <p className="font-medium">Controlla questi punti:</p><ul className="mt-1 list-disc space-y-1 pl-5">{preview.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>
         </div>}
         <div className="space-y-2">{preview.days.map(day => <div key={day.id} className="rounded-md border p-3">
-          <p className="text-sm font-medium">{day.label}</p><p className="mt-1 text-xs text-muted-foreground">{day.meals.map(meal => meal.name).join(' · ')}</p>
+          <p className="text-sm font-medium">{day.label}</p>
+          <div className="mt-1 space-y-1 text-xs text-muted-foreground">{day.meals.map(meal => {
+            const cumulative = meal.foods.filter(food => food.mode !== 'alternative').length
+            const groups = new Set(meal.foods.filter(food => food.mode === 'alternative').map(food => food.alternativeGroup || 'Altre alternative'))
+            return <p key={meal.id}>{meal.name}: {cumulative} voci da consumare{groups.size > 0 ? ` · ${groups.size} gruppi di alternative` : ''}</p>
+          })}</div>
         </div>)}</div>
         <div className="flex justify-end border-t pt-4"><Button onClick={() => { onApply(preview); setPreview(null); setFiles([]) }}><Check />Usa come nuova bozza</Button></div>
       </div>}
