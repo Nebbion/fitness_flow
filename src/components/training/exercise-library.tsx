@@ -5,6 +5,7 @@ import { Dumbbell, ImagePlus, Loader2, Pencil, Plus, Save, Search, Trash2, X } f
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, Input } from '@/components/ui/index'
+import { ExerciseSheetImport } from './exercise-sheet-import'
 
 type ExerciseImage = { path: string; alt: string; url?: string }
 type LibraryExercise = {
@@ -139,6 +140,8 @@ export function ExerciseLibrary() {
   }
 
   return <div className="space-y-6">
+    <ExerciseSheetImport onImported={load} />
+
     <Card>
       <CardContent className="p-5 md:p-6 space-y-4">
         <div className="flex items-start justify-between gap-4">
