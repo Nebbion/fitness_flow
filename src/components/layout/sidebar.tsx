@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 import {
   LayoutDashboard, Users, Calendar, Briefcase,
   UserCog, CreditCard, Sparkles, Settings, ChevronLeft,
-  ChevronRight, Activity, Dumbbell, Utensils,
+  ChevronRight, Activity, Dumbbell, Utensils, CookingPot,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/utils'
@@ -65,6 +65,13 @@ function getNavItems(locale: string): NavItem[] {
       key: 'nutrition',
       href: `/${locale}/dashboard/nutrition`,
       icon: Utensils,
+      roles: ['TENANT_ADMIN', 'STAFF'],
+      module: 'nutrition',
+    },
+    {
+      key: 'mealIdeas',
+      href: `/${locale}/dashboard/meal-ideas`,
+      icon: CookingPot,
       roles: ['TENANT_ADMIN', 'STAFF'],
       module: 'nutrition',
     },

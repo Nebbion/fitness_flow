@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, Loader2, Plus, Printer, Save, Trash2, Utensils } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, Loader2, Plus, Printer, Save, Trash2, Utensils } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, Input } from '@/components/ui/index'
@@ -10,6 +10,7 @@ import { calculatePlanAverage, sumNutritionFoods, sumNutritionMeals } from '@/li
 import { NutritionTotalsLine, PrintableNutritionPlan, type NutritionPlanDisplay } from './nutrition-plan-presentation'
 import { measurementsSchema, type PlanMeasurements } from '@/lib/nutrition/schemas'
 import { PlanMeasurementsEditor } from './plan-measurements'
+import { NutritionPlanImport, type ImportedNutritionDraft } from './nutrition-plan-import'
 
 const newMeal = (name = 'Colazione'): NutritionMeal => ({ id: crypto.randomUUID(), name, time: '', notes: '', alternatives: '', foods: [] })
 const newDay = (label = 'Giorno tipo'): NutritionDay => ({ id: crypto.randomUUID(), label, meals: [newMeal()] })
@@ -64,6 +65,48 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
   function changePlan(plan?: any) {
     if (currentDraft !== baseline && !window.confirm('Abbandonare le modifiche non salvate?')) return
     selectPlan(plan)
+  }
+
+  function applyImportedDraft(draft: ImportedNutritionDraft) {
+    if (currentDraft !== baseline && !window.confirm('Sostituire le modifiche non salvate con il piano importato?')) return
+    setPlanId(undefined)
+    setVersion(undefined)
+    setHasSavedPlan(false)
+    setTitle(draft.title)
+    setObjective(draft.objective)
+    setGuidelines(draft.guidelines)
+    setTargetCalories(draft.targetCalories)
+    setDays(draft.days)
+    setStartsOn(draft.startsOn ?? '')
+    setEndsOn(draft.endsOn ?? '')
+    setInitialMeasurements(measurementsSchema.parse({}))
+    setFinalMeasurements(measurementsSchema.parse({}))
+    setCollapsed({})
+    setCollapsedMeals({})
+    setBaseline('__imported_unsaved__')
+    toast.success('Bozza importata. Controllala e salvala quando è corretta.')
+  }
+
+  function duplicatePlan() {
+    const duplicatedDays = days.map(day => ({
+      ...day,
+      id: crypto.randomUUID(),
+      meals: day.meals.map(meal => ({
+        ...meal,
+        id: crypto.randomUUID(),
+        foods: meal.foods.map(food => ({ ...food, id: crypto.randomUUID() })),
+      })),
+    }))
+    setPlanId(undefined)
+    setVersion(undefined)
+    setHasSavedPlan(false)
+    setTitle(`${title} (copia)`)
+    setDays(duplicatedDays)
+    setFinalMeasurements(measurementsSchema.parse({}))
+    setCollapsed({})
+    setCollapsedMeals({})
+    setBaseline('__duplicated_unsaved__')
+    toast.success('Piano duplicato come nuova bozza. Applica le modifiche e salvalo.')
   }
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [collapsedMeals, setCollapsedMeals] = useState<Record<string, boolean>>({})
@@ -130,6 +173,10 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
   return <div className="space-y-5 print:space-y-0">
     {hasSavedPlan && <PrintableNutritionPlan plan={displayPlan} tenant={tenant} client={{ full_name: clientName }} />}
     <div className="space-y-5 print:hidden">
+      <details className="rounded-lg border bg-card">
+        <summary className="cursor-pointer px-5 py-4 text-sm font-semibold">Importa piano con AI</summary>
+        <div className="border-t p-4"><NutritionPlanImport onApply={applyImportedDraft} /></div>
+      </details>
       <div className="flex flex-wrap items-end gap-3">
         <label className="min-w-0 flex-1 text-sm">Piani alimentari e storico
           <select className="mt-1 h-10 w-full rounded-md border bg-background px-3" disabled={saving} value={planId ?? ''}
@@ -138,6 +185,7 @@ export function NutritionPlanPanel({ clientId, clientName, tenant }: {
             {plans.map(plan => <option key={plan.id} value={plan.id}>{plan.title} · {plan.starts_on ?? 'Inizio non indicato'} / {plan.ends_on ?? 'Fine non indicata'}</option>)}
           </select>
         </label>
+        {hasSavedPlan && <Button variant="outline" disabled={saving} onClick={duplicatePlan}><Copy />Duplica</Button>}
         <Button variant="outline" disabled={saving} onClick={() => changePlan()}><Plus />Nuovo piano</Button>
       </div>
       <Card>

@@ -31,6 +31,7 @@ const SUBSCRIPTION_GATED_API_PREFIXES = [
   '/api/appointments',
   '/api/clients',
   '/api/integrations',
+  '/api/nutrition',
   '/api/services',
   '/api/settings',
   '/api/staff',

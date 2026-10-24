@@ -24,6 +24,14 @@ export async function getTrainingProfessional() {
   return actor
 }
 
+export async function getNutritionProfessional() {
+  const actor = await getProfessional()
+  if (!actor) return null
+  const tenant = Array.isArray(actor.profile?.tenants) ? actor.profile.tenants[0] : actor.profile?.tenants
+  if (!hasPracticeModule(tenant, 'nutrition')) return null
+  return actor
+}
+
 export async function getProfessionalClientContext(clientId: string) {
   const actor = await getProfessional()
   if (!actor) return null

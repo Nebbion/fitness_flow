@@ -111,6 +111,7 @@ Configurazione completa di prodotti, Customer Portal, webhook e test locale: [`d
 | `OPENAI_API_KEY` | API key OpenAI |
 | `EXERCISE_IMPORT_AI_MODEL` | Modello multimodale per importare schede (default `gpt-4o`) |
 | `EXERCISE_IMPORT_AI_DAILY_LIMIT` | Importazioni scheda per professionista al giorno (default `10`) |
+| `NUTRITION_IMPORT_AI_MODEL` | Modello multimodale per importare piani alimentari (default `gpt-4o`) |
 | `PROGRESS_AI_PROVIDER` | Provider progressi: `openai` o `openai-compatible` |
 | `PROGRESS_AI_MODEL` | Modello usato per l'analisi progressi |
 | `PROGRESS_AI_API_KEY` | API key dedicata opzionale (fallback a `OPENAI_API_KEY` per OpenAI) |
