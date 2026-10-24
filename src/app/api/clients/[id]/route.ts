@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { updateClientSchema } from '@/schemas'
 import type { Json } from '@/types/supabase'
+import { hasSubscriptionAccess } from '@/lib/billing/plans'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -51,6 +52,28 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     // Gestione toggle active (azione speciale)
     if ('active' in body && Object.keys(body).length === 1) {
+      if (body.active === true) {
+        const [{ data: tenant }, { count }] = await Promise.all([
+          supabase
+            .from('tenants')
+            .select('max_clients, plan, status, trial_ends_at')
+            .eq('id', profile.tenant_id)
+            .single(),
+          supabase
+            .from('clients')
+            .select('*', { count: 'exact', head: true })
+            .eq('tenant_id', profile.tenant_id)
+            .eq('active', true),
+        ])
+
+        if (!tenant || !hasSubscriptionAccess(tenant)) {
+          return NextResponse.json({ error: 'Abbonamento non attivo.' }, { status: 402 })
+        }
+        if (count !== null && count >= tenant.max_clients) {
+          return NextResponse.json({ error: 'Limite clienti raggiunto. Aggiorna il piano.' }, { status: 403 })
+        }
+      }
+
       const { data, error } = await supabase
         .from('clients')
         .update({ active: body.active })
@@ -59,6 +82,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         .select()
         .single()
 
+      if (error?.code === '23514') {
+        return NextResponse.json({ error: 'Limite clienti raggiunto o abbonamento non attivo.' }, { status: 403 })
+      }
       if (error) throw error
       return NextResponse.json({ data })
     }

@@ -1,9 +1,11 @@
 import Stripe from 'stripe'
+import { PAID_PLAN_KEYS, PLAN_CATALOG, type PaidPlanKey } from '@/lib/billing/plans'
 
 let stripeClient: Stripe | null = null
 
-export function isStripeConfigured() {
-  return Boolean(process.env.STRIPE_SECRET_KEY)
+export function isStripeConfigured(plan?: PaidPlanKey) {
+  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) return false
+  return plan ? Boolean(getStripePriceId(plan)) : true
 }
 
 // Crea il client soltanto quando viene effettuata una richiesta Stripe.
@@ -26,28 +28,31 @@ export function getStripeClient() {
 }
 
 // Piani e relativi Price ID
-export const STRIPE_PLANS = {
-  starter: {
-    priceId: process.env.STRIPE_PRICE_STARTER!,
-    name: 'Starter',
-    max_clients: 50,
-    price_monthly: 29,
-  },
-  professional: {
-    priceId: process.env.STRIPE_PRICE_PROFESSIONAL!,
-    name: 'Professional',
-    max_clients: 250,
-    price_monthly: 59,
-  },
-  business: {
-    priceId: process.env.STRIPE_PRICE_BUSINESS!,
-    name: 'Business',
-    max_clients: 999999,
-    price_monthly: 99,
-  },
-} as const
+const PRICE_ENV_KEYS: Record<PaidPlanKey, keyof NodeJS.ProcessEnv> = {
+  starter: 'STRIPE_PRICE_STARTER',
+  professional: 'STRIPE_PRICE_PROFESSIONAL',
+  business: 'STRIPE_PRICE_BUSINESS',
+}
 
-export type StripePlanKey = keyof typeof STRIPE_PLANS
+export function getStripePriceId(plan: PaidPlanKey): string | null {
+  return process.env[PRICE_ENV_KEYS[plan]]?.trim() || null
+}
+
+export const STRIPE_PLANS = Object.fromEntries(
+  PAID_PLAN_KEYS.map(key => [key, {
+    priceId: getStripePriceId(key),
+    name: PLAN_CATALOG[key].name,
+    max_clients: PLAN_CATALOG[key].maxClients,
+    price_monthly: PLAN_CATALOG[key].priceMonthly,
+  }])
+) as Record<PaidPlanKey, {
+  priceId: string | null
+  name: string
+  max_clients: number
+  price_monthly: number
+}>
+
+export type StripePlanKey = PaidPlanKey
 
 // Ottieni il piano da un price ID
 export function getPlanFromPriceId(priceId: string): StripePlanKey | null {
@@ -72,6 +77,8 @@ export async function getOrCreateStripeCustomer(
     name: tenantName,
     email,
     metadata: { tenant_id: tenantId },
+  }, {
+    idempotencyKey: `fitnessflow-customer-${tenantId}`,
   })
 
   return customer.id
@@ -94,14 +101,13 @@ export async function createCheckoutSession({
   const session = await getStripeClient().checkout.sessions.create({
     customer: customerId,
     mode: 'subscription',
-    payment_method_types: ['card'],
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: successUrl,
     cancel_url: cancelUrl,
+    client_reference_id: tenantId,
     metadata: { tenant_id: tenantId },
     subscription_data: {
       metadata: { tenant_id: tenantId },
-      trial_period_days: 0,
     },
     allow_promotion_codes: true,
     billing_address_collection: 'auto',

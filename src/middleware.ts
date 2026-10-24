@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
 import { routing } from './i18n/routing'
+import { hasSubscriptionAccess, isTrialExpired } from './lib/billing/plans'
 
 // ─── Route protette per ruolo ─────────────────────────────────
 const PROTECTED_ROUTES: Record<string, string[]> = {
@@ -25,6 +26,17 @@ const PUBLIC_PATHS = [
   '/api/webhooks',  // webhook Stripe e WhatsApp non autenticati
 ]
 
+const SUBSCRIPTION_GATED_API_PREFIXES = [
+  '/api/ai',
+  '/api/appointments',
+  '/api/clients',
+  '/api/integrations',
+  '/api/services',
+  '/api/settings',
+  '/api/staff',
+  '/api/training/exercises',
+]
+
 const intlMiddleware = createMiddleware(routing)
 
 export async function middleware(request: NextRequest) {
@@ -44,9 +56,48 @@ export async function middleware(request: NextRequest) {
   // Estrai il locale dal path (/it/... o /en/...)
   const pathnameWithoutLocale = pathname.replace(/^\/(it|en)/, '') || '/'
 
-  // ─── 3. API route — nessuna localizzazione o redirect ──────
+  // ─── 3. API route — niente localizzazione; applica però il
+  // gate dell'abbonamento alle operazioni dello studio.
   if (pathname.startsWith('/api/')) {
-    return NextResponse.next()
+    if (!SUBSCRIPTION_GATED_API_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
+      return NextResponse.next()
+    }
+
+    let apiResponse = NextResponse.next()
+    const apiSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+            apiResponse = NextResponse.next({ request })
+            cookiesToSet.forEach(({ name, value, options }) => apiResponse.cookies.set(name, value, options))
+          },
+        },
+      }
+    )
+
+    const { data: { user: apiUser } } = await apiSupabase.auth.getUser()
+    if (!apiUser) return apiResponse
+
+    const { data: apiProfile } = await apiSupabase
+      .from('profiles')
+      .select(`tenants (status, plan, trial_ends_at)`)
+      .eq('id', apiUser.id)
+      .single()
+    const apiTenant = Array.isArray(apiProfile?.tenants) ? apiProfile.tenants[0] : apiProfile?.tenants
+
+    if (apiTenant && !hasSubscriptionAccess(apiTenant)) {
+      return NextResponse.json(
+        { error: 'Abbonamento non attivo. Scegli un piano per continuare.' },
+        { status: 402 }
+      )
+    }
+    return apiResponse
   }
 
   // ─── 4. Supabase Auth — refresh sessione ──────────────────
@@ -113,7 +164,36 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ─── 9. Utente autenticato sulla homepage → redirect ───────
+  // ─── 9. Scadenza trial / abbonamento ─────────────────────
+  // Il titolare conserva sempre l'accesso alla pagina billing per poter
+  // riattivare l'account; lo staff vede una pagina informativa dedicata.
+  if (pathnameWithoutLocale.startsWith('/dashboard')) {
+    const locale = pathname.match(/^\/(it|en)/)?.[1] ?? 'it'
+    const { data: accessProfile } = await supabase
+      .from('profiles')
+      .select(`
+        role,
+        tenants (status, plan, trial_ends_at)
+      `)
+      .eq('id', user.id)
+      .single()
+
+    const tenant = Array.isArray(accessProfile?.tenants)
+      ? accessProfile.tenants[0]
+      : accessProfile?.tenants
+    const isBillingPath = pathnameWithoutLocale.startsWith('/dashboard/billing')
+    const isRequiredPath = pathnameWithoutLocale.startsWith('/dashboard/subscription-required')
+
+    if (tenant && !hasSubscriptionAccess(tenant) && !isBillingPath && !isRequiredPath) {
+      if (accessProfile?.role === 'TENANT_ADMIN') {
+        const reason = isTrialExpired(tenant) ? 'expired' : tenant.status
+        return NextResponse.redirect(new URL(`/${locale}/dashboard/billing?access=${reason}`, request.url))
+      }
+      return NextResponse.redirect(new URL(`/${locale}/dashboard/subscription-required`, request.url))
+    }
+  }
+
+  // ─── 10. Utente autenticato sulla homepage → redirect ──────
   if (pathnameWithoutLocale === '/' || pathnameWithoutLocale === '') {
     const locale = pathname.match(/^\/(it|en)/)?.[1] ?? 'it'
     const { data: profile } = await supabase

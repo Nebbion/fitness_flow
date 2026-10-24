@@ -96,12 +96,14 @@ Apri [http://localhost:3000](http://localhost:3000)
 ### Stripe
 | Variabile | Descrizione |
 |-----------|-------------|
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Chiave pubblica Stripe |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Chiave pubblica Stripe (non richiesta dal Checkout ospitato attuale) |
 | `STRIPE_SECRET_KEY` | Chiave segreta Stripe |
 | `STRIPE_WEBHOOK_SECRET` | Secret per verifica webhook |
 | `STRIPE_PRICE_STARTER` | Price ID piano Starter |
 | `STRIPE_PRICE_PROFESSIONAL` | Price ID piano Professional |
 | `STRIPE_PRICE_BUSINESS` | Price ID piano Business |
+
+Configurazione completa di prodotti, Customer Portal, webhook e test locale: [`docs/stripe-billing.md`](docs/stripe-billing.md).
 
 ### OpenAI
 | Variabile | Descrizione |

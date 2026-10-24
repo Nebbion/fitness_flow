@@ -17,7 +17,8 @@ interface AIAssistantProps {
   locale: string
   profession: string
   clients: { id: string; full_name: string; email: string | null }[]
-  plan: string
+  aiMonthlyLimit: number
+  aiUsedThisMonth: number
 }
 
 interface FeatureConfig {
@@ -106,7 +107,7 @@ const FEATURE_LABELS: Record<string, string> = {
   draft_email: 'Bozza Email',
 }
 
-export function AIAssistant({ locale, profession, clients, plan }: AIAssistantProps) {
+export function AIAssistant({ locale, profession, clients, aiMonthlyLimit, aiUsedThisMonth }: AIAssistantProps) {
   const t = useTranslations('ai')
 
   const [selectedFeature, setSelectedFeature] = useState<AIFeature | null>(null)
@@ -116,6 +117,7 @@ export function AIAssistant({ locale, profession, clients, plan }: AIAssistantPr
   const [output, setOutput] = useState('')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [remaining, setRemaining] = useState(Math.max(0, aiMonthlyLimit - aiUsedThisMonth))
   const abortRef = useRef<AbortController | null>(null)
 
   const availableFeatures = FEATURES.filter(f =>
@@ -156,6 +158,9 @@ export function AIAssistant({ locale, profession, clients, plan }: AIAssistantPr
         const err = await res.text()
         throw new Error(err)
       }
+
+      const serverRemaining = Number(res.headers.get('X-AI-Monthly-Remaining'))
+      if (Number.isFinite(serverRemaining)) setRemaining(serverRemaining)
 
       const reader = res.body?.getReader()
       const decoder = new TextDecoder()
@@ -273,7 +278,7 @@ export function AIAssistant({ locale, profession, clients, plan }: AIAssistantPr
         {/* Genera */}
         <Button
           className="w-full"
-          disabled={!selectedFeature || loading}
+          disabled={!selectedFeature || loading || remaining <= 0}
           onClick={handleGenerate}
         >
           {loading ? (
@@ -288,6 +293,10 @@ export function AIAssistant({ locale, profession, clients, plan }: AIAssistantPr
             </>
           )}
         </Button>
+
+        <p className="text-center text-xs text-muted-foreground">
+          {remaining.toLocaleString(locale)} di {aiMonthlyLimit.toLocaleString(locale)} generazioni disponibili questo mese
+        </p>
 
         {loading && (
           <Button

@@ -41,11 +41,6 @@ export default async function DashboardLayout({
 
   const tenant = Array.isArray(profile.tenants) ? profile.tenants[0] : profile.tenants
 
-  // Tenant sospeso → pagina di errore billing
-  if (tenant?.status === 'suspended') {
-    redirect(`/${locale}/dashboard/billing?suspended=true`)
-  }
-
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <NavigationFeedback />

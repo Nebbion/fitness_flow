@@ -36,10 +36,10 @@ CREATE TABLE tenants (
   stripe_subscription_id   TEXT UNIQUE,
   stripe_price_id          TEXT,
   plan            tenant_plan NOT NULL DEFAULT 'trial',
-  trial_ends_at   TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '14 days'),
+  trial_ends_at   TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '30 days'),
   status          tenant_status NOT NULL DEFAULT 'active',
   -- Limiti piano
-  max_clients     INT NOT NULL DEFAULT 50,
+  max_clients     INT NOT NULL DEFAULT 10,
   -- Impostazioni
   timezone        TEXT NOT NULL DEFAULT 'Europe/Rome',
   locale          preferred_language NOT NULL DEFAULT 'it',

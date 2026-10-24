@@ -6,40 +6,17 @@ import { toast } from 'sonner'
 import { Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/index'
+import { PAID_PLAN_KEYS, PLAN_CATALOG, UNLIMITED_CLIENTS, type PlanKey } from '@/lib/billing/plans'
 import { cn } from '@/lib/utils'
 
 interface BillingPlansProps {
   locale: string
-  tenantId: string
-  currentPlan: string
-  stripeCustomerId: string | null
+  currentPlan: PlanKey
 }
 
-const PLANS = [
-  {
-    key: 'starter',
-    price: 29,
-    clients: '50',
-    features: ['50 clienti', 'Appuntamenti illimitati', 'Messaggi WhatsApp', 'Storage 5GB', 'Assistente AI'],
-    popular: false,
-  },
-  {
-    key: 'professional',
-    price: 59,
-    clients: '250',
-    features: ['250 clienti', 'Appuntamenti illimitati', 'Messaggi WhatsApp illimitati', 'Storage 20GB', 'Assistente AI avanzato', 'Google Calendar sync'],
-    popular: true,
-  },
-  {
-    key: 'business',
-    price: 99,
-    clients: '∞',
-    features: ['Clienti illimitati', 'Appuntamenti illimitati', 'WhatsApp illimitato', 'Storage 100GB', 'AI illimitata', 'Staff illimitato', 'Supporto prioritario'],
-    popular: false,
-  },
-]
+const PLANS = PAID_PLAN_KEYS.map(key => PLAN_CATALOG[key])
 
-export function BillingPlans({ locale, tenantId, currentPlan, stripeCustomerId }: BillingPlansProps) {
+export function BillingPlans({ locale, currentPlan }: BillingPlansProps) {
   const t = useTranslations('billing')
   const [loading, setLoading] = useState<string | null>(null)
 
@@ -70,6 +47,7 @@ export function BillingPlans({ locale, tenantId, currentPlan, stripeCustomerId }
         {PLANS.map(plan => {
           const isCurrent = currentPlan === plan.key
           const isPopular = plan.popular
+          const clients = plan.maxClients >= UNLIMITED_CLIENTS ? '∞' : plan.maxClients.toLocaleString(locale)
 
           return (
             <Card
@@ -89,7 +67,7 @@ export function BillingPlans({ locale, tenantId, currentPlan, stripeCustomerId }
               )}
               <CardHeader className="pt-6">
                 <CardTitle className="flex items-center justify-between">
-                  <span className="capitalize">{plan.key}</span>
+                  <span>{plan.name}</span>
                   {isCurrent && (
                     <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-normal">
                       Attuale
@@ -97,10 +75,10 @@ export function BillingPlans({ locale, tenantId, currentPlan, stripeCustomerId }
                   )}
                 </CardTitle>
                 <div className="mt-2">
-                  <span className="text-3xl font-bold">€{plan.price}</span>
+                  <span className="text-3xl font-bold">€{plan.priceMonthly}</span>
                   <span className="text-muted-foreground text-sm">/mese</span>
                 </div>
-                <p className="text-sm text-muted-foreground">fino a {plan.clients} clienti</p>
+                <p className="text-sm text-muted-foreground">fino a {clients} clienti</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ul className="space-y-2">

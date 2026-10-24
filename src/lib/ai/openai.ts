@@ -18,6 +18,20 @@ export type AIFeature =
   | 'draft_whatsapp'
   | 'draft_email'
 
+export const AI_FEATURES: readonly AIFeature[] = [
+  'nutrition_plan',
+  'meal_suggestions',
+  'workout_plan',
+  'workout_progression',
+  'summarize_client',
+  'draft_whatsapp',
+  'draft_email',
+]
+
+export function isAIFeature(value: unknown): value is AIFeature {
+  return typeof value === 'string' && AI_FEATURES.includes(value as AIFeature)
+}
+
 // Prompts per professione e feature
 export function buildSystemPrompt(profession: string, locale: string): string {
   const lang = locale === 'it' ? 'italiano' : 'English'

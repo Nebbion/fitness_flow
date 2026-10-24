@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { onboardingSchema } from '@/schemas'
 import { defaultModulesForProfession } from '@/lib/practice-modules'
+import { getTrialEndDate, PLAN_CATALOG } from '@/lib/billing/plans'
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,7 +61,8 @@ export async function POST(request: NextRequest) {
         locale: locale ?? 'it',
         timezone: timezone ?? 'Europe/Rome',
         plan: 'trial',
-        max_clients: 10,
+        max_clients: PLAN_CATALOG.trial.maxClients,
+        trial_ends_at: getTrialEndDate().toISOString(),
       })
       .select()
       .single()

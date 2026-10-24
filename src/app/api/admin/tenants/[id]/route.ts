@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireSuperAdminApi } from '@/lib/admin/auth'
+import { PLAN_CATALOG } from '@/lib/billing/plans'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -14,13 +15,6 @@ const tenantUpdateSchema = z.object({
   max_clients: z.number().int().min(0).max(999999).optional(),
   trial_ends_at: z.string().datetime({ offset: true }).nullable().optional(),
 })
-
-const DEFAULT_PLAN_LIMITS = {
-  trial: 10,
-  starter: 50,
-  professional: 250,
-  business: 999999,
-} as const
 
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
@@ -38,7 +32,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     const update: Record<string, unknown> = { ...parsed.data }
     if (parsed.data.plan && parsed.data.max_clients === undefined) {
-      update.max_clients = DEFAULT_PLAN_LIMITS[parsed.data.plan]
+      update.max_clients = PLAN_CATALOG[parsed.data.plan].maxClients
     }
     if ('logo_url' in update) {
       const logoUrl = update.logo_url

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClientSchema } from '@/schemas'
 import type { Json } from '@/types/supabase'
+import { hasSubscriptionAccess } from '@/lib/billing/plans'
 
 // GET /api/clients — lista clienti del tenant
 export async function GET(request: NextRequest) {
@@ -67,9 +68,16 @@ export async function POST(request: NextRequest) {
     // Verifica limite clienti
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('max_clients')
+      .select('max_clients, plan, status, trial_ends_at')
       .eq('id', profile.tenant_id)
       .single()
+
+    if (!tenant || !hasSubscriptionAccess(tenant)) {
+      return NextResponse.json(
+        { error: 'Abbonamento non attivo. Scegli un piano per continuare.' },
+        { status: 402 }
+      )
+    }
 
     const { count } = await supabase
       .from('clients')
@@ -107,6 +115,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
+      if (error.code === '23514') {
+        return NextResponse.json(
+          { error: error.message === 'Client limit reached' ? 'Limite clienti raggiunto. Aggiorna il piano.' : 'Abbonamento non attivo.' },
+          { status: 403 }
+        )
+      }
       if (error.code === '23505') {
         return NextResponse.json(
           { error: 'Esiste già un cliente con questa email' },

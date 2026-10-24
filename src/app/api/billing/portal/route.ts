@@ -13,13 +13,16 @@ export async function POST(request: NextRequest) {
     if (!user) return NextResponse.redirect(new URL('/auth/login', request.url))
 
     const formData = await request.formData()
-    const locale = formData.get('locale') ?? 'it'
+    const locale = formData.get('locale') === 'en' ? 'en' : 'it'
 
     const { data: profile } = await supabase
-      .from('profiles').select('tenant_id').eq('id', user.id).single()
+      .from('profiles').select('tenant_id, role').eq('id', user.id).single()
 
     if (!profile?.tenant_id) {
       return NextResponse.redirect(new URL(`/${locale}/auth/onboarding`, request.url))
+    }
+    if (profile.role !== 'TENANT_ADMIN') {
+      return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url))
     }
 
     const { data: tenant } = await supabase
@@ -31,7 +34,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL!
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
+    if (!appUrl || !URL.canParse(appUrl)) {
+      return NextResponse.redirect(new URL(`/${locale}/dashboard/billing?error=config`, request.url))
+    }
     const url = await createBillingPortalSession(
       tenant.stripe_customer_id,
       `${appUrl}/${locale}/dashboard/billing`
@@ -40,6 +46,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(url)
   } catch (err: any) {
     console.error('Portal error:', err)
-    return NextResponse.redirect(new URL('/dashboard/billing', request.url))
+    return NextResponse.redirect(new URL('/it/dashboard/billing?error=portal', request.url))
   }
 }
